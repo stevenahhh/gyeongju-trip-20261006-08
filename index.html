@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경주 여행 동선 지도 · 2026.10.06(화)–10.08(목)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --paper:#fafafa; --panel:#ffffff; --ink:#1c1e21; --ink2:#5f6368; --line:#e4e6e9;
+  --user-red:#d64545; --rec-green:#2e8b57; --accent:#3d5a80;
+  --d1:#e07a3f; --d2:#3f7fe0; --d3:#7a4fd0;
+  --shadow:0 2px 10px rgba(28,30,33,.08),0 0 0 1px rgba(28,30,33,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Pretendard Variable','Pretendard','Noto Sans KR',system-ui,-apple-system,sans-serif;
+  background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
+  word-break:keep-all;overflow-wrap:anywhere;
+  display:flex;flex-direction:column;min-height:100dvh;
+}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;flex:0 0 auto}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:17px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+.sub{font-size:12px;color:var(--ink2)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;
+  padding:5px 12px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;display:inline-flex;align-items:center;gap:6px}
+.pill:hover{background:#f0f1f3}
+.pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pill.rec-toggle .dot{background:var(--rec-green)}
+.pill.rec-toggle.off .dot{background:transparent;border:1.5px solid var(--ink2)}
+.toolbtn{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;
+  font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer}
+.toolbtn:hover{background:#f0f1f3}
+.spacer{flex:1}
+main{flex:1;display:flex;min-height:0}
+#mapwrap{flex:1;position:relative;min-width:0}
+#map{position:absolute;inset:0;background:#e9edf1}
+#schematic{position:absolute;inset:0;display:none;background:
+  linear-gradient(#f2f4f6,#eef1f4)}
+#schematic svg{width:100%;height:100%}
+#banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;
+  background:#fff8e6;border:1px solid #ecd9a0;color:#6b5410;font-size:12px;
+  padding:6px 12px;border-radius:8px;box-shadow:var(--shadow);max-width:92%;display:none}
+#legend{position:absolute;left:10px;bottom:22px;z-index:800;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;
+  box-shadow:var(--shadow);max-width:230px}
+#legend summary{font-size:12px;font-weight:700;cursor:pointer;list-style:none}
+#legend summary::-webkit-details-marker{display:none}
+#legend[open] summary{margin-bottom:6px}
+#legend .li{display:flex;align-items:center;gap:7px;margin:3px 0;color:var(--ink2)}
+#legend .swatch{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+#legend .rline{width:16px;height:0;border-top:3px solid;border-radius:2px;flex:0 0 auto}
+#legend .note{font-size:11px;color:var(--ink2);margin-top:6px;line-height:1.45}
+aside#panel{width:400px;flex:0 0 400px;background:var(--panel);border-left:1px solid var(--line);
+  overflow-y:auto;padding:14px 14px 40px}
+.daycard{border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.daycard .dhead{padding:9px 12px;font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.daycard .dhead .chip{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.daycard .dhead .meta{font-weight:400;font-size:11.5px;color:var(--ink2);margin-left:auto;text-align:right}
+.stop{padding:8px 12px;display:flex;gap:10px;cursor:pointer;border-top:1px solid #f2f3f4;transition:background .12s}
+.stop:hover{background:#f7f8f9}
+.stop.sel{background:#eef2f7}
+.stop .num{width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin-top:2px}
+.stop .body{min-width:0;flex:1}
+.stop .nm{font-weight:600;font-size:13.5px}
+.stop .tm{font-size:12px;color:var(--ink2)}
+.stop .note{font-size:12px;color:var(--ink2);margin-top:2px}
+.stop .tags{margin-top:3px;display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:999px;background:#f0f1f3;color:var(--ink2)}
+.leg{padding:5px 12px 5px 44px;font-size:11.5px;color:var(--ink2);border-top:1px solid #f2f3f4;
+  display:flex;align-items:center;gap:6px;background:#fbfbfc}
+.leg .bar{width:2px;height:14px;background:var(--line);border-radius:2px}
+.recbox{border:1px dashed var(--rec-green);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.recbox .rhead{padding:8px 12px;font-weight:700;font-size:13px;color:var(--rec-green);background:#f2faf5}
+.recbox .stop{cursor:pointer}
+.assump{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink2);
+  margin-bottom:14px;background:#fcfbf8}
+.assump b{color:var(--ink)}
+section.src{margin-top:6px;font-size:11.5px;color:var(--ink2)}
+section.src ol{padding-left:18px}
+section.src a{color:var(--accent);text-decoration:none}
+section.src a:hover{text-decoration:underline}
+/* Leaflet pin icons */
+.pin{width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;font-size:12px;
+  display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;
+  box-shadow:0 1px 5px rgba(0,0,0,.35)}
+.pin.u{background:var(--user-red)}
+.pin.r{background:var(--rec-green)}
+.pin.h{background:#6b7280}
+.pin.hidden-day{opacity:.25;filter:grayscale(.6)}
+.pin.pulse{animation:pulse .5s ease 2}
+@keyframes pulse{50%{transform:scale(1.35)}}
+@media (prefers-reduced-motion:reduce){.pin.pulse{animation:none}}
+.arrow{color:#fff;text-shadow:0 0 2px rgba(0,0,0,.6);font-size:13px}
+.leaflet-popup-content{font-family:inherit;font-size:12.5px;line-height:1.5}
+.pp h4{font-size:14px;margin-bottom:2px}
+.pp .cat{font-size:10.5px;color:var(--ink2);margin-bottom:5px}
+.pp .kv{font-size:12px;margin:2px 0;color:#333}
+.pp .kv b{font-weight:600}
+.pp .links{margin-top:6px;display:flex;gap:8px;flex-wrap:wrap}
+.pp .links a{color:var(--accent);font-size:11.5px;text-decoration:none}
+.pp .links a:hover{text-decoration:underline}
+.pp .badge{display:inline-block;font-size:10px;background:#f0f1f3;border-radius:999px;padding:0 6px;margin-right:4px;color:var(--ink2)}
+/* schematic pins */
+.sc-pin{position:absolute;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;
+  font-size:12px;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;
+  box-shadow:0 1px 5px rgba(0,0,0,.3);cursor:pointer;transform:translate(-50%,-50%);z-index:5}
+.sc-pin.u{background:var(--user-red)}
+.sc-pin.r{background:var(--rec-green)}
+.sc-pin.h{background:#6b7280}
+.sc-pin.hidden-day{opacity:.25}
+#sc-tip{position:absolute;display:none;z-index:10;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;box-shadow:var(--shadow);padding:10px 12px;max-width:260px;font-size:12.5px}
+.stop .nm .kind{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;margin-left:6px;vertical-align:1px}
+.stop .nm .kind.u{background:#fbe9e9;color:var(--user-red)}
+.stop .nm .kind.r{background:#e6f4ec;color:var(--rec-green)}
+@media (max-width:1023px){
+  main{flex-direction:column}
+  #mapwrap{flex:0 0 55dvh;min-height:340px}
+  aside#panel{width:100%;flex:1 1 auto;border-left:none;border-top:1px solid var(--line)}
+  #legend{bottom:14px;max-width:200px;font-size:11px;padding:8px 10px}
+  header{padding:8px 10px}
+  h1{font-size:15px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>경주 여행 동선 지도</h1>
+    <span class="sub">2026.10.06(화) – 10.08(목) · 자가용 여행 · 경주 내 동선</span>
+  </div>
+  <div class="hrow" style="margin-top:8px">
+    <div class="pills" id="dayPills">
+      <button type="button" class="pill active" data-day="all" aria-pressed="true">전체</button>
+      <button type="button" class="pill" data-day="1" aria-pressed="false"><span class="dot" style="background:var(--d1)"></span>10/6 화</button>
+      <button type="button" class="pill" data-day="2" aria-pressed="false"><span class="dot" style="background:var(--d2)"></span>10/7 수</button>
+      <button type="button" class="pill" data-day="3" aria-pressed="false"><span class="dot" style="background:var(--d3)"></span>10/8 목</button>
+    </div>
+    <button type="button" class="pill rec-toggle" id="recToggle" aria-pressed="true"><span class="dot"></span>추천 장소</button>
+    <button type="button" class="toolbtn" id="viewToggle">개략도 보기</button>
+    <button type="button" class="toolbtn" id="fitBtn">전체 보기</button>
+  </div>
+</header>
+<main>
+  <div id="mapwrap">
+    <div id="map"></div>
+    <div id="schematic"><svg id="scSvg" preserveAspectRatio="xMidYMid meet" role="img"><title>경주 동선 개략도</title></svg><div id="sc-tip"></div></div>
+    <div id="banner"></div>
+    <details id="legend" open>
+      <summary>범례</summary>
+      <div class="legend-content">
+        <div class="li"><span class="swatch" style="background:var(--user-red)"></span>직접 고른 곳 (7)</div>
+        <div class="li"><span class="swatch" style="background:var(--rec-green)"></span>추천 장소 (토글 가능)</div>
+        <div class="li"><span class="rline" style="border-color:var(--d1)"></span>10/6 화 동선</div>
+        <div class="li"><span class="rline" style="border-color:var(--d2)"></span>10/7 수 동선</div>
+        <div class="li"><span class="rline" style="border-color:var(--d3)"></span>10/8 목 동선</div>
+        <div class="note">경로선은 직선으로 이은 <b>개략 동선</b>입니다 (실제 도로 경로 아님). 이동 시간은 각 구간 표기 참고.<br>배경 지도 타일은 인터넷이 필요합니다. 오프라인에서는 개략도 보기를 사용하세요.</div>
+      </div>
+    </details>
+  </div>
+  <aside id="panel">
+    <div class="assump" id="assump"></div>
+    <div id="days"></div>
+    <div class="recbox" id="recbox">
+      <div class="rhead">추천 장소 (초록 핀) — 일정은 선택적으로 조정</div>
+      <div id="recs"></div>
+    </div>
+    <section class="src"><b>주의</b><div id="cautions" style="margin:4px 0 8px"></div><b>출처</b><ol id="srclist"></ol></section>
+  </aside>
+</main>
+<script>
+window.__pageErrors=[];
+window.addEventListener('error',e=>window.__pageErrors.push({type:'error',message:e.message||'resource error',source:e.filename||'',line:e.lineno||0}));
+window.addEventListener('unhandledrejection',e=>window.__pageErrors.push({type:'unhandledrejection',message:String(e.reason)}));
+window.__mapTileState={loads:0,errors:0};
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* ==================== DATA ==================== */
+const DATA = {
+  meta: {
+    assumptions: [
+      "자가용 이동으로 확정했습니다. 숙소·순천 출발·귀가 시각은 미정이므로 아래 시간은 조정 가능한 예시입니다.",
+      "10/6 순천에서 10:30 전후 출발 → 휴게·정체를 포함해 경주 14:00–14:30 도착을 목표로 잡습니다. 순천↔경주 운전은 약 3시간 15분–3시간 45분의 추정 범위입니다.",
+      "10/8 박물관 관람 뒤 15:30 전후 경주 출발 → 휴게·정체에 따라 순천 19:00 전후 도착 예시. 버스 15:10 마감과 터미널 짐보관 일정은 사용하지 않습니다.",
+      "숙소는 미정입니다. 황리단길/시내 숙박을 기본 예시로 두며, 보문 숙소라면 첫날·마지막 날 차량 이동을 추가하세요.",
+      "첫날은 황리단길 인근 공영주차장에 한 번 주차하고 후프후프·황리단길·교촌·월정교를 걷습니다. 주차 위치와 요금은 현장 확인; 차를 회수하는 도보 시간 20–30분을 따로 남기세요.",
+      "보문·남산 구간은 자가용으로 이동합니다. 장소마다 주차·입출차에 10–20분 여유를 더하고, 동궁과 월지 야간 관람 전에는 첫 주차지의 차량부터 회수하세요.",
+      "황룡원은 일반 내부 자유관람 시설이 아닙니다. 합법적으로 주차·보행 가능한 곳에서 외관을 보고, 도로변 정차나 사유 경내 진입을 전제하지 않습니다.",
+      "지도 선은 직선 개략 동선(도로 경로 아님), 이동 시간은 추정치"
+    ],
+    cautions: [
+      "10/8(목) 월정교 일대: 화백제전 수상무대 설치 관련 보도 — 일부 구역 제한 가능성이 있어 10/6 저녁에 배치. 조명 세부 운영시간은 공식 확인 못함.",
+      "국립경주박물관: 10/6–8 정상 개관. 10/3–5·10/9–11 해설 미운영(전시 관람은 정상). 주차 유료화 안내 있음.",
+      "경주월드: 2026-07 안전사고 후속 — 대관람차는 7/30 기준 운영 중단, 타임라이더·드라켄 일부 점검 이력. 일부 기구 운휴 가능",
+      "후프후프: 평일 11:00-18:00(LO 17:30)·예약 불가·현장접수 — 오후 15~17시대 방문 필수",
+      "천년숲정원: 10:00-17:00(입장마감 16:30) — 저녁 배치 불가",
+      "솔거미술관: 휴관 규정 자료가 상충하며 10/6은 대체공휴일 다음 날이라 기본 일정에서 제외.",
+      "식당 화요 휴무 패턴 존재(황남두꺼비·경주단골 등) — 저녁 후보는 연중무휴 집으로 골라둠"
+    ],
+    sources: [
+      {t:"국립경주박물관 관람안내·공지5550", u:"https://gyeongju.museum.go.kr"},
+      {t:"경주시 문화관광 시내권 (월정교·동궁과월지·첨성대·대릉원·교촌)", u:"https://www.gyeongju.go.kr/tour/page.do?mnu_uid=2292"},
+      {t:"경주월드 공식 (운영시간 캘린더 2026-10)", u:"https://www.gjw.co.kr/Contents/contents.php?cmsNo=DA0100&month=2026-10"},
+      {t:"경북천년숲정원 — 경상북도 산림청 페이지", u:"https://gb.go.kr/Main/open_contents/section/forest/page.do"},
+      {t:"정원누리(산림청) 경북천년숲정원", u:"https://garden.koagi.or.kr/cpage/garden/local/Detail.do?garden_id=LCG00021"},
+      {t:"황룡원 공식", u:"http://hwangnyongwon.com/"},
+      {t:"경주엑스포대공원 이용안내 (통합권·루미나이트·황룡원 혜택)", u:"https://www.cultureexpo.or.kr/open.content/ko/guide/information.use/"},
+      {t:"경북일보 — EX펌킨나잇 9/24~10/24", u:"https://www.kbmaeil.com/article/20260921500144"},
+      {t:"순천↔경주 시외버스 시간표 (공공데이터 미러)", u:"https://transportation.asamaru.net/시외버스/시간표/순천종합버스터미널/출발/경주시외버스터미널/도착/"},
+      {t:"경주시 물품보관 레지스트리", u:"https://www.gyeongju.go.kr/tour/page.do?mnu_uid=4842"},
+      {t:"후프후프 최신 후기 (2026-09-28)", u:"https://blog.naver.com/yu_dinn/224425324809"},
+      {t:"매일경제 — 후프후프 당근 리뷰 무료", u:"https://view.mk.co.kr/trip-food/article/228791"},
+      {t:"경주 택시요금 인상 (2026-02)", u:"https://www.newsprime.co.kr/news/article.html?no=721737"},
+      {t:"경주 시내버스 노선 (allnosun 공공데이터)", u:"https://allnosun.com/citybus/gyeongju"},
+      {t:"포인트경제 — 신라예술제·화백제전 준비(접근 제한 가능성 참고)", u:"https://pointe.co.kr/news/articleView.html?idxno=85073"},
+      {t:"교통·체류 상세 조사 노트", u:"./RESEARCH.md"},
+      {t:"일자별 상세 일정과 조정 방법", u:"./ITINERARY.md"}
+    ]
+  },
+  places: [
+    {id:"woljeonggyo", no:"5", name:"월정교", cat:"유적·야경", kind:"user", days:[1],
+      lat:35.8293658, lon:129.2173528, addr:"경주시 교동 274 / 월정교 일원",
+      hours:"공식 안내 09:00–22:00", fee:"무료",
+      desc:"신라 통일기 목조 교량을 재현한 월정교. 사용자 요청에 따라 10/6 저녁으로 배치한다. 일몰은 약 18:00이지만 조명 점등·소등 세부 시각은 공식 확인되지 않아 22:00 이전 관람을 권한다. 교촌마을과 가깝다. 10/9 전후 행사 무대 설치 보도가 있어 10/8 대신 10/6에 방문.",
+      links:[{t:"경주시 안내",u:"https://www.gyeongju.go.kr/tour/page.do?area_uid=49&cmd=2&mnu_uid=2292"},{t:"네이버 지도",u:"https://map.naver.com/p/search/월정교 경주"}]},
+    {id:"hwangnyongwon", no:"1", name:"황룡원 (중도타워)", cat:"명상연수·타워", kind:"user", days:[2],
+      lat:35.8367020, lon:129.2899907, addr:"경주시 엑스포로 40 (경주엑스포대공원 인접)",
+      hours:"일반 내부 관람 없음 — 프로그램·숙박 예약 문의", fee:"외관 조망은 무료 (내부 관람은 예약 확인)",
+      desc:"황룡사 9층 목탑 형상을 본뜬 68m 중도타워가 있는 보문·엑스포로 40의 연수·수행 시설이다. 시내 황룡사지나 엑스포공원 안의 경주타워와 다른 장소다. 내부 프로그램·식사·숙박은 예약제로 안내되며 일반 자유입장 관광지로 보지 않는다. 지도 일정은 공공도로에서 외관을 조망하는 예시이며 경내 진입은 보장하지 않는다. 방문 전 054-760-0500 확인 권장.",
+      links:[{t:"공식 사이트(HTTP)",u:"http://hwangnyongwon.com/"},{t:"엑스포 이용안내",u:"https://www.cultureexpo.or.kr/open.content/ko/guide/information.use/"},{t:"네이버 지도",u:"https://map.naver.com/p/search/황룡원 경주"}]},
+    {id:"hoofhoof", no:"2", name:"후프후프", cat:"말 카페·브런치", kind:"user", days:[1],
+      lat:35.8391436, lon:129.2086493, addr:"경주시 태종로 736 (사정동 1-17)",
+      hours:"평일 11:00–18:00 (LO 17:30)", fee:"음료 5,500~ · 브런치 세트 13,500 · 당근 먹이주기 무료(영수증 리뷰)",
+      desc:"황리단길 북쪽 태종로 축의 조랑말 브런치 카페 — 터미널에서 도보 약 10–15분. 마당의 조랑말 당근 체험은 영수증 리뷰 조건으로 안내됨. 2026-06 SBS 생방송투데이 방영, 2026-09-28 최신 방문기 확인. 예약·현장 접수 조건은 달라질 수 있으니 방문 전 확인. 맞은편 공영주차장 이용 안내.",
+      links:[{t:"네이버 지도",u:"https://map.naver.com/p/search/후프후프 경주"},{t:"매일경제 기사",u:"https://view.mk.co.kr/trip-food/article/228791"}]},
+    {id:"cheonnyeon", no:"2", name:"경북천년숲정원", cat:"지방정원·숲", kind:"user", days:[3],
+      lat:35.8117828, lon:129.2420771, addr:"경주시 통일로 366-4 (남산동)",
+      hours:"10:00–17:00 (입장마감 16:30, 동절기 ~16:00)", fee:"무료 (주차도 무료)",
+      desc:"경북 1호 지방정원 — 메타세쿼이아길·테마정원 산책. 10월 초는 단풍 절정으로 단정하지 않는다. 통일로 366-4 남산동으로, 시내에서 차·택시 약 10–15분 추정. 핑크뮬리 명소인 첨성대와는 다른 곳이다.",
+      links:[{t:"정원누리 공식",u:"https://garden.koagi.or.kr/cpage/garden/local/Detail.do?garden_id=LCG00021"},{t:"네이버 지도",u:"https://map.naver.com/p/search/경북천년숲정원"}]},
+    {id:"museum", no:"3", name:"국립경주박물관", cat:"국립박물관", kind:"user", days:[3],
+      lat:35.8294254, lon:129.2278958, addr:"경주시 일정로 186",
+      hours:"10:00–18:00 (입장마감 17:30)", fee:"무료 (특별전 일부 유료)",
+      desc:"10/6–8 정상 개관(10:00–18:00). 특별전 「황룡사, 부처의 사리를 모시다」는 10/11까지. 10/3–5 및 10/9–11은 해설이 중단되지만 전시 관람은 가능하다. 어린이박물관은 임시 휴관 연장 공지, 주차 유료화 안내를 확인했다.",
+      links:[{t:"공식 사이트",u:"https://gyeongju.museum.go.kr"},{t:"해설 미운영 공지",u:"https://gyeongju.museum.go.kr/kor/html/sub07/0701.html?mode=V&no=5550&site_dvs_cd=kor&menu_dvs_cd=0701"},{t:"네이버 지도",u:"https://map.naver.com/p/search/국립경주박물관"}]},
+    {id:"gjworld", no:"2", name:"경주월드", cat:"테마파크", kind:"user", days:[2],
+      lat:35.8363451, lon:129.2821431, addr:"경주시 보문로 544",
+      hours:"10/6-8 평일 10:00–18:00 (오후권 15:00~)", fee:"종일권 54,000 / 오후3시권 39,000",
+      desc:"2026년 10월 공식 달력에서 10/6–8 평일 10:00–18:00. 종일권 성인 54,000원, 오후권(15:00–18:00) 39,000원. 2026년 7월 안전점검·사고 이력과 주 단위 운휴 변경 안내가 있어 방문 당일 어트랙션 운영표를 확인한다. 공식 도메인 gjw.co.kr.",
+      links:[{t:"10월 운영시간 캘린더",u:"https://www.gjw.co.kr/Contents/contents.php?cmsNo=DA0100&month=2026-10"},{t:"네이버 지도",u:"https://map.naver.com/p/search/경주월드"}]},
+    {id:"hwangridan", no:"3", name:"황리단길", cat:"먹거리·거리", kind:"user", days:[1],
+      lat:35.8363343, lon:129.2096064, addr:"경주시 황남동·사정동 일대 (포석로 1080 부근)",
+      hours:"카페 ~18:00 마감 다수 / 식당 ~21:00-22:00 / 주점 심야", fee:"—",
+      desc:"황남동·사정동 포석로 축의 카페·식당 거리. 2026년 추석 연휴 방문 보도로 현재 활기를 확인했지만 점포별 화요일 운영시간은 다르다. 카페는 이른 저녁에 닫는 사례가 있어 영업 중인 가게를 현장 확인하고, 식사는 당일 영업 확인 후 선택한다.",
+      links:[{t:"VisitKorea 소개",u:"https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?cotId=c36f22a0"},{t:"네이버 지도",u:"https://map.naver.com/p/search/황리단길"}]},
+    {id:"donggung", no:"G1", name:"동궁과 월지", cat:"유적·야경 (추천)", kind:"rec", days:[1],
+      lat:35.8347938, lon:129.2265702, addr:"경주시 원화로 102",
+      hours:"09:00–22:00 (매표마감 21:30)", fee:"3,000원",
+      desc:"월정교에서 도보 ~15분. 신라 별궁 연못 야경이 국내 야경 1티어 — 반영은 19시 이후가 안정. 월정교 다음 타자로 묶어야 하는 자리.",
+      links:[{t:"경주시 안내",u:"https://www.gyeongju.go.kr/tour/page.do?area_uid=50&cmd=2&mnu_uid=2292"},{t:"네이버 지도",u:"https://map.naver.com/p/search/동궁과 월지"}]},
+    {id:"cheomseongdae", no:"G2", name:"첨성대·동부사적지대", cat:"유적 (추천)", kind:"rec", days:[1],
+      lat:35.8347062, lon:129.2189968, addr:"경주시 첨성로 140-25",
+      hours:"09:00–22:00", fee:"무료",
+      desc:"황리단길과 월정교 사이에 있는 야외 유적 산책 추천. 핑크뮬리 개화 정도는 해마다 달라지므로 절정이라고 단정하지 않는다.",
+      links:[{t:"경주시 안내",u:"https://www.gyeongju.go.kr/tour/page.do?area_uid=47&cmd=2&mnu_uid=2292"},{t:"네이버 지도",u:"https://map.naver.com/p/search/첨성대 경주"}]},
+    {id:"gyochon", no:"G3", name:"교촌마을", cat:"한옥마을 (추천)", kind:"rec", days:[1],
+      lat:35.8302886, lon:129.2164810, addr:"경주시 교촌길 39-2 일원",
+      hours:"마을 상시 (최부자댁 등 개별 시설 ~17:30)", fee:"무료",
+      desc:"월정교 바로 옆 경주 최씨 한옥마을 — 저녁 조명+한옥 골목 분위기. 월정교 가기 전 30분 산책용.",
+      links:[{t:"경주시 안내",u:"https://www.gyeongju.go.kr/tour/page.do?area_uid=52&cmd=2&mnu_uid=2292"},{t:"네이버 지도",u:"https://map.naver.com/p/search/교촌마을 경주"}]},
+    {id:"daereungwon", no:"G4", name:"대릉원 (천마총)", cat:"고분공원 (추천)", kind:"rec", days:[1],
+      lat:35.8381328, lon:129.2123207, addr:"경주시 계림로 9 (황남동 31-1)",
+      hours:"09:00–22:00", fee:"경내 무료 (천마총 내부 3,000)",
+      desc:"황리단길 북쪽 고분 산책로 — 2023년 입장료 폐지로 부담 제로. 오후 느긋한 산책 또는 월정교 전 프리코스.",
+      links:[{t:"경주시 안내",u:"https://www.gyeongju.go.kr/tour/page.do?area_uid=203&cmd=2&mnu_uid=2292"},{t:"네이버 지도",u:"https://map.naver.com/p/search/대릉원"}]},
+    {id:"bomunlake", no:"G5", name:"보문호반길", cat:"호수 산책 (추천)", kind:"rec", days:[2],
+      lat:35.8429408, lon:129.2864300, addr:"경주시 보문호 일주 (보문단지)",
+      hours:"야외 산책로, 상시 접근 구간", fee:"무료",
+      desc:"보문호 둘레 약 8km의 산책로. 전체 완주 대신 경주월드 주변의 가까운 일부 구간만 선택할 수 있다. 야간 경관 시설은 구간·운영 상태가 다를 수 있다.",
+      links:[{t:"네이버 지도",u:"https://map.naver.com/p/search/보문호반광장"}]},
+    {id:"expopark", no:"G6", name:"EX펌킨나잇 (엑스포대공원)", cat:"기간한정 야간행사 (추천)", kind:"rec", days:[2],
+      lat:35.8334300, lon:129.2895000, addr:"경주시 경감로 614 화랑숲",
+      hours:"공식 행사 안내: 9/24–10/24 매일 18:00–22:00 (입장마감 21:00)", fee:"별도 야간 티켓 — 예매 페이지에서 조건·요금 재확인",
+      desc:"여행 기간에 겹치는 엑스포대공원 화랑숲 야간 행사. 낮 통합권과 별도 티켓이며 17시 입장 가능 여부·콘텐츠 범위는 공지/예매 페이지에서 확인한다. 10/7 경주월드 뒤 선택 일정으로 표시.",
+      links:[{t:"경북일보 기사",u:"https://www.kbmaeil.com/article/20260921500144"},{t:"엑스포 공식",u:"https://www.cultureexpo.or.kr"},{t:"네이버 지도",u:"https://map.naver.com/p/search/경주엑스포대공원"}]}
+  ],
+  itinerary: [
+    {day:1, title:"10/6(화) 도착 · 황리단길 · 월정교 야경", meta:"자가용 도착 · 주차 후 시내 도보",
+     stops:[
+       {id:"hoofhoof", time:"14:55–16:20", note:"14:00–14:30 경주 도착·주차 후 카페로 이동하는 예시. 인근 공영주차장 위치·요금 현장 확인. 말 체험·간단 식사; 대기 길면 16:30 전 출발."},
+       {id:"hwangridan", time:"16:30–17:10", note:"거리 산책. 개별 카페의 화요일 운영은 현장 확인."},
+       {id:"gyochon", time:"17:15–17:45", note:"추천 선택지 — 외부 골목 위주 산책."},
+       {id:"woljeonggyo", time:"17:50–19:00", note:"사용자 지정 필수. 해 질 무렵부터 저녁 관람. 공식 운영 안내 09:00–22:00."},
+       {id:"donggung", time:"20:00–21:20 (선택)", note:"월정교 뒤 첫 주차지로 돌아가 차량 회수(도보 20–30분 여유), 저녁 식사 후 차량으로 이동·재주차. 매표마감 21:30. 피곤하면 생략."}
+     ],
+     legs:[
+       {mode:"도보", min:"8", tag:"DERIVED"},
+       {mode:"도보", min:"8", tag:"DERIVED"},
+       {mode:"도보", min:"4", tag:"DERIVED"},
+       {mode:"차량 회수 + 자가용", min:"30-45", tag:"추정 · 도보 회수·운전·주차, 저녁 식사 별도"}
+     ]},
+    {day:2, title:"10/7(수) 보문 벨트 · 경주월드", meta:"종일 · 자가용 보문 권역",
+     stops:[
+       {id:"hwangnyongwon", time:"09:15–09:45 (외관 조망)", note:"시내 숙소에서 자가용 이동 약 20–30분 추정. 합법적인 주차·공공 보행로 조망만 전제; 도로변 정차·사유 경내 진입은 하지 않음. 내부는 예약 문의."},
+       {id:"gjworld", time:"10:00–17:20", note:"황룡원 외관 조망 후 자가용으로 이동·주차. 주차장 위치·요금은 공식 안내/현장 확인. 평일 10:00–18:00 운영, 놀이기구 운휴는 당일 확인."},
+       {id:"expopark", time:"18:00–20:00 (선택)", note:"EX펌킨나잇 별도 야간권. 간단 식사·이동 시간을 두고 입장. 무료 대안은 보문호반길 가까운 구간 산책."}
+     ],
+     legs:[
+       {mode:"자가용 + 주차", min:"10-20", tag:"추정 · 황룡원→경주월드"},
+       {mode:"자가용 + 주차", min:"15-25", tag:"추정 · 경주월드→엑스포"}
+     ]},
+    {day:3, title:"10/8(목) 천년숲정원 · 박물관 · 귀가", meta:"자가용 · 15:30 전후 귀가 출발 예시",
+     stops:[
+       {id:"cheonnyeon", time:"10:00–11:15", note:"09:00–09:30 체크아웃 후 자가용으로 정원 이동·주차. 짐은 차량에 싣되 귀중품은 지참. 10:00 개장 이후 숲 산책."},
+       {id:"museum", time:"12:30–15:00", note:"정원에서 차량 이동, 점심·주차 후 특별전과 상설전 관람. 주차 유료화 안내 확인. 15:00–15:30 차량 회수·휴식 후 순천 귀가 출발 예시; 운전자 피로에 맞춰 조정."}
+     ],
+     legs:[
+       {mode:"자가용 + 주차", min:"20-30", tag:"추정 · 정원→박물관, 점심 별도"}
+     ]}
+  ]
+};
+/* ============================================= */
+const DAYC = {1:'#e07a3f',2:'#3f7fe0',3:'#7a4fd0'};
+const state = { day:'all', recs:true, schematic:false, tileFailed:false, leafletReady:false };
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+let map=null, pinLayer=[], routeLayers={1:null,2:null,3:null}, arrowLayer=[];
+let scPins=[];
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function placeById(id){return DATA.places.find(p=>p.id===id);}
+function pinKind(p){return p.kind==='user'?'u':p.kind==='rec'?'r':'h';}
+
+/* ---------- popup html ---------- */
+function popupHTML(p){
+  const days = p.days.map(d=>`<span class="badge">10/${5+d}</span>`).join('');
+  const links = p.links.map(l=>`<a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.t)}</a>`).join('');
+  return `<div class="pp">
+    <h4>${esc(p.name)} <span class="badge" style="background:${p.kind==='user'?'#fbe9e9':p.kind==='rec'?'#e6f4ec':'#eef0f2'};color:${p.kind==='user'?'#d64545':p.kind==='rec'?'#2e8b57':'#59616b'}">${p.kind==='user'?'직접 선택':p.kind==='rec'?'추천':'교통 허브'}</span></h4>
+    <div class="cat">${esc(p.cat)} · ${esc(p.addr)}</div>
+    ${p.hours?`<div class="kv"><b>운영</b> ${esc(p.hours)}</div>`:''}
+    ${p.fee?`<div class="kv"><b>요금</b> ${esc(p.fee)}</div>`:''}
+    <div class="kv">${p.desc}</div>
+    <div style="margin-top:4px">${days}</div>
+    <div class="links">${links}</div>
+  </div>`;
+}
+
+/* ---------- leaflet ---------- */
+function makeIcon(p){
+  return L.divIcon({className:'', html:`<div class="pin ${pinKind(p)}" data-pid="${p.id}" data-lat="${p.lat}" data-lon="${p.lon}" data-kind="${p.kind}">${p.no||''}</div>`, iconSize:[26,26], iconAnchor:[13,13]});
+}
+function bearing(a,b){
+  const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
+  const y=Math.sin(toRad(b[1]-a[1]))*Math.cos(toRad(b[0]));
+  const x=Math.cos(toRad(a[0]))*Math.sin(toRad(b[0]))-Math.sin(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.cos(toRad(b[1]-a[1]));
+  return (toDeg(Math.atan2(y,x))+360)%360;
+}
+function buildRoutes(){
+  for(const d of [1,2,3]){
+    const stops = DATA.itinerary.find(i=>i.day===d).stops;
+    const pts = stops.map(s=>{const p=placeById(s.id);return [p.lat,p.lon];});
+    const line = L.polyline(pts,{color:DAYC[d],weight:3.5,opacity:.85,dashArray:'2 7',lineCap:'round'}).addTo(map);
+    routeLayers[d]=line;
+    for(let i=0;i<pts.length-1;i++){
+      const mid=[(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2];
+      const br=bearing(pts[i],pts[i+1]);
+      const ic=L.divIcon({className:'arrow', html:`<div style="transform:rotate(${br-90}deg);color:${DAYC[d]};font-size:15px">▶</div>`, iconSize:[14,14], iconAnchor:[7,7]});
+      arrowLayer.push(L.marker(mid,{icon:ic,interactive:false}).addTo(map));
+    }
+  }
+}
+function refreshVisibility(){
+  // pins
+  pinLayer.forEach(({p,m})=>{
+    const vis = (state.day==='all'||p.days.includes(+state.day)) &&
+      (p.kind!=='rec'||state.recs);
+    if(!vis){map.removeLayer(m);return;}
+    if(!map.hasLayer(m))m.addTo(map);
+    m.setIcon(makeIcon(p));
+  });
+  // routes
+  for(const d of [1,2,3]){
+    const vis = state.day==='all'||+state.day===d;
+    if(routeLayers[d]){ if(vis&&!map.hasLayer(routeLayers[d]))routeLayers[d].addTo(map); if(!vis&&map.hasLayer(routeLayers[d]))map.removeLayer(routeLayers[d]); }
+  }
+  arrowLayer.forEach(a=>{ // arrows tagged by day via color — recompute visibility by matching route pts
+    const vis = state.day==='all'||a._day===+state.day;
+    if(vis&&!map.hasLayer(a))a.addTo(map); if(!vis&&map.hasLayer(a))map.removeLayer(a);
+  });
+  // itinerary highlight
+  $$('.daycard').forEach(el=>{el.style.display=(state.day==='all'||el.dataset.day===state.day)?'':'none';});
+  $$('#recbox').forEach(el=>{el.style.display=state.recs?'':'none';});
+  $$('#recs .stop').forEach(el=>{
+    const visible=state.day==='all'||el.dataset.days.split(',').includes(state.day);
+    el.style.display=visible?'':'none';
+  });
+  // schematic
+  if(state.schematic)buildSchematic();
+}
+function fitAll(){
+  const places=DATA.places.filter(p=>(p.kind!=='rec'||state.recs)&&(state.day==='all'||p.days.includes(+state.day)));
+  const pts=places.map(p=>[p.lat,p.lon]);
+  if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(state.day==='all'?0.12:0.18),{animate:false});
+}
+
+/* ---------- schematic (offline) ---------- */
+function project(lat,lon,bbox,W,H){
+  const [s,w,n,e]=bbox; const x=(lon-w)/(e-w)*W, y=(n-lat)/(n-s)*H;
+  return [x,y];
+}
+function buildSchematic(){
+  const svg=$('#scSvg'); const wrap=$('#mapwrap');
+  const W=Math.max(wrap.clientWidth,320), H=Math.max(wrap.clientHeight,300);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const visiblePlaces=DATA.places.filter(p=>(p.kind!=='rec'||state.recs)&&(state.day==='all'||p.days.includes(+state.day)));
+  const lats=visiblePlaces.map(p=>p.lat), lons=visiblePlaces.map(p=>p.lon);
+  const pad=state.day==='all'?0.02:0.005;
+  const bbox=[Math.min(...lats)-pad,Math.min(...lons)-pad,Math.max(...lats)+pad,Math.max(...lons)+pad];
+  let inner='';
+  // grid
+  for(let i=1;i<8;i++) inner+=`<line x1="0" y1="${H*i/8}" x2="${W}" y2="${H*i/8}" stroke="#dfe3e7" stroke-width="1"/><line x1="${W*i/8}" y1="0" x2="${W*i/8}" y2="${H}" stroke="#dfe3e7" stroke-width="1"/>`;
+  // routes
+  for(const d of [1,2,3]){
+    if(state.day!=='all'&&+state.day!==d)continue;
+    const stops=DATA.itinerary.find(i=>i.day===d).stops;
+    const pts=stops.map(s=>{const p=placeById(s.id);return project(p.lat,p.lon,bbox,W,H);});
+    const dstr=pts.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ');
+    inner+=`<path d="${dstr}" fill="none" stroke="${DAYC[d]}" stroke-width="3" stroke-dasharray="3 6" stroke-linecap="round" opacity=".8"/>`;
+    for(let i=0;i<pts.length-1;i++){
+      const mx=(pts[i][0]+pts[i+1][0])/2,my=(pts[i][1]+pts[i+1][1])/2;
+      const ang=Math.atan2(pts[i+1][1]-pts[i][1],pts[i+1][0]-pts[i][0])*180/Math.PI;
+      inner+=`<g transform="translate(${mx},${my}) rotate(${ang})"><path d="M-4,-5 L5,0 L-4,5 Z" fill="${DAYC[d]}"/></g>`;
+    }
+  }
+  // labels for a few landmarks
+  inner+=`<text x="12" y="20" font-size="11" fill="#8a8f94">개략도 모드 · 비율=직선거리 비례 · 바다/도로 생략</text>`;
+  svg.innerHTML=inner;
+  // pins as DOM
+  $('#schematic').querySelectorAll('.sc-pin').forEach(n=>{n.remove();});
+  scPins=[];
+  DATA.places.forEach(p=>{
+    if(p.kind==='rec'&&!state.recs)return;
+    if(state.day!=='all'&&!p.days.includes(+state.day))return;
+    const [x,y]=project(p.lat,p.lon,bbox,W,H);
+    const el=document.createElement('div');
+    el.className='sc-pin '+pinKind(p);
+    el.textContent=p.no||''; el.style.left=x+'px'; el.style.top=y+'px';
+    el.dataset.pid=p.id;el.dataset.lat=String(p.lat);el.dataset.lon=String(p.lon);
+    el.onclick=ev=>{ev.stopPropagation();showScTip(p,x,y);};
+    $('#schematic').appendChild(el); scPins.push(el);
+  });
+}
+function showScTip(p,x,y){
+  const t=$('#sc-tip');
+  t.innerHTML=popupHTML(p);
+  t.style.display='block';
+  const wrap=$('#mapwrap');
+  t.style.left=Math.min(x+16,wrap.clientWidth-280)+'px';
+  t.style.top=Math.max(8,y-10)+'px';
+}
+
+/* ---------- itinerary panel ---------- */
+function buildPanel(){
+  $('#assump').innerHTML=`<b>기본 가정 (조정 가능)</b><br>${DATA.meta.assumptions.map(a=>'· '+a).join('<br>')}`;
+  const daysEl=$('#days');
+  daysEl.innerHTML=DATA.itinerary.map(day=>`
+    <div class="daycard" data-day="${day.day}">
+      <div class="dhead"><span class="chip" style="background:${DAYC[day.day]}"></span>${esc(day.title)}<span class="meta">${esc(day.meta)}</span></div>
+      ${day.stops.map((s,i)=>{
+        const p=placeById(s.id);
+        const leg=day.legs?.[i-1];
+        return `${leg?`<div class="leg"><span class="bar"></span>${esc(leg.mode)} 약 ${leg.min}분${leg.tag?` · <span class="tag">${esc(leg.tag)}</span>`:''}</div>`:''}
+        <div class="stop" data-pid="${p.id}" data-day="${day.day}" role="button" tabindex="0" aria-label="${esc(p.name)} ${esc(s.time||'')}">
+          <div class="num" style="background:${p.kind==='user'?'var(--user-red)':p.kind==='rec'?'var(--rec-green)':'#6b7280'}">${i+1}</div>
+          <div class="body">
+            <div class="nm">${esc(p.name)}<span class="kind ${p.kind==='user'?'u':p.kind==='rec'?'r':'h'}">${p.kind==='user'?'직접 선택':p.kind==='rec'?'추천':'교통 허브'}</span></div>
+            <div class="tm">${esc(s.time||'')}</div>
+            ${s.note?`<div class="note">${esc(s.note)}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+  $('#recs').innerHTML=DATA.places.filter(p=>p.kind==='rec').map(p=>`
+    <div class="stop" data-pid="${p.id}" data-days="${p.days.join(',')}">
+      <div class="num" style="background:var(--rec-green)">${p.no||''}</div>
+      <div class="body"><div class="nm">${esc(p.name)}</div>
+      <div class="tm">${esc(p.hours||'')}</div>
+      <div class="note">${esc(p.desc).slice(0,90)}…</div></div>
+    </div>`).join('');
+  $('#cautions').innerHTML=DATA.meta.cautions.map(c=>'· '+c).join('<br>');
+  $('#srclist').innerHTML=DATA.meta.sources.map(s=>`<li><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a></li>`).join('');
+  $$('.stop').forEach(el=>{
+    el.onclick=event=>{event.stopPropagation();selectPlace(el.dataset.pid,el);};
+    el.onkeydown=event=>{
+      if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPlace(el.dataset.pid,el);}
+    };
+  });
+}
+function selectPlace(id,row){
+  const p=placeById(id); if(!p)return;
+  $$('.stop.sel').forEach(e=>{e.classList.remove('sel');});
+  if(row)row.classList.add('sel');
+  if(row)row.scrollIntoView({block:'nearest',behavior:'smooth'});
+  if(state.schematic){
+    const el=scPins.find(n=>n.dataset.pid===p.id);
+    if(el){showScTip(p,parseFloat(el.style.left),parseFloat(el.style.top));}
+    return;
+  }
+  if(!map)return;
+  const ent=pinLayer.find(e=>e.p.id===id);
+  if(ent){ent.m.openPopup();
+    const node=ent.m.getElement()?.querySelector('.pin'); if(node){node.classList.remove('pulse');void node.offsetWidth;node.classList.add('pulse');}}
+  map.setView([p.lat,p.lon],Math.max(map.getZoom(),15),{animate:false});
+}
+
+/* ---------- boot ---------- */
+function banner(msg){const b=$('#banner');b.innerHTML=msg;b.style.display=msg?'block':'none';}
+function setSchematic(on,reason){
+  state.schematic=on;
+  $('#schematic').style.display=on?'block':'none';
+  $('#map').style.visibility=on?'hidden':'visible';
+  $('#viewToggle').textContent=on?'지도 보기':'개략도 보기';
+  if(on){buildSchematic();banner(reason||'');}
+  else banner('');
+}
+function boot(){
+  buildPanel();
+  // leaflet load guard
+  let waited=0;
+  const iv=setInterval(()=>{
+    waited+=200;
+    if(window.L){clearInterval(iv);state.leafletReady=true;initMap();}
+    else if(waited>8000){clearInterval(iv);setSchematic(true,'지도 라이브러리를 불러오지 못했습니다(오프라인일 수 있음). 개략도 모드로 표시합니다.');}
+  },200);
+}
+function initMap(){
+  map=L.map('map',{zoomControl:true}).setView([35.85,129.22],12);
+  window.__mapMoveCount=0;
+  map.on('moveend',()=>{window.__mapMoveCount++;window.dispatchEvent(new Event('gyeongju-map-idle'));});
+  const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'© OpenStreetMap contributors'
+  }).addTo(map);
+  let tileErr=0;
+  tiles.on('tileerror',()=>{tileErr++;window.__mapTileState.errors++;window.dispatchEvent(new Event('gyeongju-map-tile')); if(tileErr>3&&!state.tileFailed){state.tileFailed=true;
+    banner('지도 타일을 불러오지 못하고 있습니다(네트워크 필요). 핀과 동선은 유지되며, 개략도 모드로 전환할 수 있습니다.');}});
+  tiles.on('tileload',()=>{window.__mapTileState.loads++;window.dispatchEvent(new Event('gyeongju-map-tile'));});
+  DATA.places.forEach(p=>{
+    const m=L.marker([p.lat,p.lon],{icon:makeIcon(p)}).addTo(map);
+    m.bindPopup(popupHTML(p),{maxWidth:280});
+    m.on('popupopen',()=>window.dispatchEvent(new Event('gyeongju-map-popup-open')));
+    m.on('click',()=>{
+      const row=$(`.daycard[data-day="${state.day==='all'?p.days[0]:state.day}"] .stop[data-pid="${p.id}"]`) ||
+        $(`.recbox .stop[data-pid="${p.id}"]`);
+      if(row){$$('.stop.sel').forEach(e=>{e.classList.remove('sel');});row.classList.add('sel');}
+    });
+    pinLayer.push({p,m});
+  });
+  buildRoutes();
+  // tag arrows with day
+  let ai=0;
+  for(const d of [1,2,3]){
+    const n=DATA.itinerary.find(i=>i.day===d).stops.length-1;
+    for(let k=0;k<n;k++){arrowLayer[ai++]._day=d;}
+  }
+  fitAll();
+  window.dispatchEvent(new Event('gyeongju-map-ready'));
+}
+/* ---------- controls ---------- */
+$('#dayPills').addEventListener('click',e=>{
+  const b=e.target.closest('.pill');if(!b)return;
+  $$('#dayPills .pill').forEach(x=>{x.classList.toggle('active',x===b);});
+  $$('#dayPills .pill').forEach(x=>{x.setAttribute('aria-pressed',String(x===b));});
+  state.day=b.dataset.day;
+  $('#fitBtn').textContent=state.day==='all'?'전체 보기':'이 날 보기';
+  refreshVisibility();
+  if(map&&!state.schematic)fitAll();
+});
+$('#recToggle').addEventListener('click',()=>{
+  state.recs=!state.recs;
+  $('#recToggle').classList.toggle('off',!state.recs);
+  $('#recToggle').setAttribute('aria-pressed',String(state.recs));
+  refreshVisibility();
+});
+$('#fitBtn').addEventListener('click',()=>{
+  if(state.schematic){buildSchematic();$('#sc-tip').style.display='none';return;}
+  if(map)fitAll();
+});
+$('#viewToggle').addEventListener('click',()=>setSchematic(!state.schematic,state.schematic?'':'개략도 모드'));
+document.addEventListener('click',e=>{if(!e.target.closest('#sc-tip')&&!e.target.closest('.sc-pin'))$('#sc-tip').style.display='none';});
+window.addEventListener('resize',()=>{if(state.schematic)buildSchematic();});
+document.addEventListener('DOMContentLoaded',()=>{ if(!DATA){document.body.innerHTML='<p style="padding:40px">데이터 없음</p>';return;} if(matchMedia('(max-width: 1023px)').matches)$('#legend').removeAttribute('open');boot(); });
+</script>
+</body>
+</html>
