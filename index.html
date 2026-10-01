@@ -12,6 +12,7 @@
   --paper:#fafafa; --panel:#ffffff; --ink:#1c1e21; --ink2:#5f6368; --line:#e4e6e9;
   --user-red:#d64545; --rec-green:#2e8b57; --accent:#3d5a80;
   --d1:#e07a3f; --d2:#3f7fe0; --d3:#7a4fd0;
+  --stay-blue:#1f5fbf; --food-orange:#e8890c;
   --shadow:0 2px 10px rgba(28,30,33,.08),0 0 0 1px rgba(28,30,33,.04);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -34,6 +35,8 @@ h1{font-size:17px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
 .pill .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .pill.rec-toggle .dot{background:var(--rec-green)}
 .pill.rec-toggle.off .dot{background:transparent;border:1.5px solid var(--ink2)}
+.pill.food-toggle .dot{background:var(--food-orange)}
+.pill.food-toggle.off .dot{background:transparent;border:1.5px solid var(--ink2)}
 .toolbtn{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;
   font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer}
 .toolbtn:hover{background:#f0f1f3}
@@ -94,6 +97,8 @@ section.src a:hover{text-decoration:underline}
 .pin.u{background:var(--user-red)}
 .pin.r{background:var(--rec-green)}
 .pin.h{background:#6b7280}
+.pin.s{background:var(--stay-blue);border-radius:8px;width:30px;height:30px}
+.pin.f{background:var(--food-orange);width:20px;height:20px;border-width:2px;font-size:10px}
 .pin.hidden-day{opacity:.25;filter:grayscale(.6)}
 .pin.pulse{animation:pulse .5s ease 2}
 @keyframes pulse{50%{transform:scale(1.35)}}
@@ -115,12 +120,19 @@ section.src a:hover{text-decoration:underline}
 .sc-pin.u{background:var(--user-red)}
 .sc-pin.r{background:var(--rec-green)}
 .sc-pin.h{background:#6b7280}
+.sc-pin.s{background:var(--stay-blue);border-radius:8px;width:30px;height:30px}
+.sc-pin.f{background:var(--food-orange);width:18px;height:18px;border-width:2px;font-size:9px}
 .sc-pin.hidden-day{opacity:.25}
 #sc-tip{position:absolute;display:none;z-index:10;background:var(--panel);border:1px solid var(--line);
   border-radius:10px;box-shadow:var(--shadow);padding:10px 12px;max-width:260px;font-size:12.5px}
 .stop .nm .kind{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;margin-left:6px;vertical-align:1px}
 .stop .nm .kind.u{background:#fbe9e9;color:var(--user-red)}
 .stop .nm .kind.r{background:#e6f4ec;color:var(--rec-green)}
+.stop .nm .kind.s{background:#e4edfb;color:var(--stay-blue)}
+.foodbox{border:1px dashed var(--food-orange);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.foodbox .rhead{padding:8px 12px;font-weight:700;font-size:13px;color:#a85f00;background:#fff6e8}
+.foodbox .fday{padding:6px 12px;font-size:12px;font-weight:700;background:#fbfbfc;border-top:1px solid #f2f3f4}
+.foodbox .stop .num{width:20px;height:20px;font-size:10px}
 @media (max-width:1023px){
   main{flex-direction:column}
   #mapwrap{flex:0 0 55dvh;min-height:340px}
@@ -145,6 +157,7 @@ section.src a:hover{text-decoration:underline}
       <button type="button" class="pill" data-day="3" aria-pressed="false"><span class="dot" style="background:var(--d3)"></span>10/8 목</button>
     </div>
     <button type="button" class="pill rec-toggle" id="recToggle" aria-pressed="true"><span class="dot"></span>추천 장소</button>
+    <button type="button" class="pill food-toggle" id="foodToggle" aria-pressed="true"><span class="dot"></span>식당 60</button>
     <button type="button" class="toolbtn" id="viewToggle">개략도 보기</button>
     <button type="button" class="toolbtn" id="fitBtn">전체 보기</button>
   </div>
@@ -159,6 +172,8 @@ section.src a:hover{text-decoration:underline}
       <div class="legend-content">
         <div class="li"><span class="swatch" style="background:var(--user-red)"></span>직접 고른 곳 (7)</div>
         <div class="li"><span class="swatch" style="background:var(--rec-green)"></span>추천 장소 (토글 가능)</div>
+        <div class="li"><span class="swatch" style="background:var(--stay-blue);border-radius:3px"></span>숙소 (동선 출발·귀환)</div>
+        <div class="li"><span class="swatch" style="background:var(--food-orange)"></span>식당 추천 하루 20곳 (표시만, 동선 아님)</div>
         <div class="li"><span class="rline" style="border-color:var(--d1)"></span>10/6 화 동선</div>
         <div class="li"><span class="rline" style="border-color:var(--d2)"></span>10/7 수 동선</div>
         <div class="li"><span class="rline" style="border-color:var(--d3)"></span>10/8 목 동선</div>
@@ -172,6 +187,10 @@ section.src a:hover{text-decoration:underline}
     <div class="recbox" id="recbox">
       <div class="rhead">추천 장소 (초록 핀) — 일정은 선택적으로 조정</div>
       <div id="recs"></div>
+    </div>
+    <div class="foodbox" id="foodbox">
+      <div class="rhead">식당 추천 (주황 핀) — 하루 20곳, 지도 표시만 · 동선에 넣지 않음</div>
+      <div id="foodlist"></div>
     </div>
     <section class="src"><b>주의</b><div id="cautions" style="margin:4px 0 8px"></div><b>출처</b><ol id="srclist"></ol></section>
   </aside>
@@ -192,9 +211,10 @@ const DATA = {
       "자가용 이동으로 확정했습니다. 숙소·순천 출발·귀가 시각은 미정이므로 아래 시간은 조정 가능한 예시입니다.",
       "10/6 순천에서 10:30 전후 출발 → 휴게·정체를 포함해 경주 14:00–14:30 도착을 목표로 잡습니다. 순천↔경주 운전은 약 3시간 15분–3시간 45분의 추정 범위입니다.",
       "10/8 박물관 관람 뒤 15:30 전후 경주 출발 → 휴게·정체에 따라 순천 19:00 전후 도착 예시. 버스 15:10 마감과 터미널 짐보관 일정은 사용하지 않습니다.",
-      "숙소는 미정입니다. 황리단길/시내 숙박을 기본 예시로 두며, 보문 숙소라면 첫날·마지막 날 차량 이동을 추가하세요.",
-      "첫날은 황리단길 인근 공영주차장에 한 번 주차하고 후프후프·황리단길·교촌·월정교를 걷습니다. 주차 위치와 요금은 현장 확인; 차를 회수하는 도보 시간 20–30분을 따로 남기세요.",
-      "보문·남산 구간은 자가용으로 이동합니다. 장소마다 주차·입출차에 10–20분 여유를 더하고, 동궁과 월지 야간 관람 전에는 첫 주차지의 차량부터 회수하세요.",
+      "숙소는 영감스테이(경북 경주시 포석로 965 1층, 황남동 489-17)로 확정했고 1·2·3일 동선의 출발·귀환 지점입니다. 체크인 15:00·체크아웃 11:00은 2025년 후기 기준이라 예약 내용을 확인하세요. 숙소 전용 주차 가능 여부는 확인하지 못했으니 숙소에 문의하세요.",
+      "식당은 하루 20곳씩 총 60곳을 주황 핀과 목록으로 표시만 하며 동선과 이동 시간에는 넣지 않았습니다. 가게별 영업일·휴게시간은 방문 전 다시 확인하세요.",
+      "첫날은 숙소(또는 인근 공영주차장)에 한 번 주차하고 후프후프·황리단길·교촌·월정교를 걷습니다. 월정교에서 숙소까지 도보 약 10분이라 차량 회수 부담이 작습니다. 주차 위치와 요금은 확인하세요.",
+      "보문·남산 구간은 자가용으로 이동합니다. 장소마다 주차·입출차에 10–20분 여유를 더하고, 동궁과 월지 야간 관람 전에는 숙소 주차지의 차량부터 회수하세요.",
       "황룡원은 일반 내부 자유관람 시설이 아닙니다. 합법적으로 주차·보행 가능한 곳에서 외관을 보고, 도로변 정차나 사유 경내 진입을 전제하지 않습니다.",
       "지도 선은 직선 개략 동선(도로 경로 아님), 이동 시간은 추정치"
     ],
@@ -228,6 +248,11 @@ const DATA = {
     ]
   },
   places: [
+    {id:"stay", no:"숙", name:"숙소 · 영감스테이", cat:"숙소 (농어촌민박)", kind:"stay", days:[1,2,3],
+      lat:35.8271377, lon:129.2095936, addr:"경북 경주시 포석로 965 1층 (황남동 489-17, 38169)",
+      hours:"체크인 15:00 / 체크아웃 11:00 (2025년 후기 기준 — 예약 확인)", fee:"예약 내용 기준",
+      desc:"사용자가 알려준 주소(포석로 965 1층)와 일치하는 농어촌민박 영감스테이. 황리단길 황남초교네거리에서 남쪽으로 도보 8분 거리로 소개된다. 좌표는 지번 489-17 지도 데이터 기준이며 주차 가능 여부는 확인하지 못했다.",
+      links:[{t:"소리114 사업장 정보",u:"https://sori114.com/sori/m.php?board=acc&command=body&no=125499"},{t:"숙소 후기(위치·체크인)",u:"https://blog.naver.com/mary815/224229488385"},{t:"네이버 지도",u:"https://map.naver.com/p/search/경북 경주시 포석로 965"}]},
     {id:"woljeonggyo", no:"5", name:"월정교", cat:"유적·야경", kind:"user", days:[1],
       lat:35.8293658, lon:129.2173528, addr:"경주시 교동 274 / 월정교 일원",
       hours:"공식 안내 09:00–22:00", fee:"무료",
@@ -295,43 +320,54 @@ const DATA = {
       links:[{t:"경북일보 기사",u:"https://www.kbmaeil.com/article/20260921500144"},{t:"엑스포 공식",u:"https://www.cultureexpo.or.kr"},{t:"네이버 지도",u:"https://map.naver.com/p/search/경주엑스포대공원"}]}
   ],
   itinerary: [
-    {day:1, title:"10/6(화) 도착 · 황리단길 · 월정교 야경", meta:"자가용 도착 · 주차 후 시내 도보",
+    {day:1, title:"10/6(화) 도착 · 숙소 · 황리단길 · 월정교 야경", meta:"자가용 도착 · 숙소 기점 도보",
      stops:[
-       {id:"hoofhoof", time:"14:55–16:20", note:"14:00–14:30 경주 도착·주차 후 카페로 이동하는 예시. 인근 공영주차장 위치·요금 현장 확인. 말 체험·간단 식사; 대기 길면 16:30 전 출발."},
-       {id:"hwangridan", time:"16:30–17:10", note:"거리 산책. 개별 카페의 화요일 운영은 현장 확인."},
-       {id:"gyochon", time:"17:15–17:45", note:"추천 선택지 — 외부 골목 위주 산책."},
-       {id:"woljeonggyo", time:"17:50–19:00", note:"사용자 지정 필수. 해 질 무렵부터 저녁 관람. 공식 운영 안내 09:00–22:00."},
-       {id:"donggung", time:"20:00–21:20 (선택)", note:"월정교 뒤 첫 주차지로 돌아가 차량 회수(도보 20–30분 여유), 저녁 식사 후 차량으로 이동·재주차. 매표마감 21:30. 피곤하면 생략."}
+       {id:"stay", time:"14:30–15:15 (도착·체크인)", note:"순천 10:30 전후 출발, 14:00–14:30 도착 예시. 체크인은 2025년 후기 기준 15:00이므로 일찍 도착하면 짐·주차 가능 여부를 숙소에 문의. 숙소 전용 주차 여부는 확인 못함 — 불가하면 근처 공영주차장 이용."},
+       {id:"hoofhoof", time:"15:30–16:40", note:"숙소에서 도보 약 18–20분(직선 1.3km). 말 체험·간단 식사; 평일 11:00–18:00(LO 17:30), 현장접수라 대기 길면 17:00 전 출발."},
+       {id:"hwangridan", time:"16:50–17:20", note:"거리 산책. 개별 카페의 화요일 운영은 현장 확인."},
+       {id:"gyochon", time:"17:30–17:55", note:"추천 선택지 — 외부 골목 위주 산책."},
+       {id:"woljeonggyo", time:"18:00–19:00", note:"사용자 지정 필수. 해 질 무렵부터 저녁 관람. 공식 운영 안내 09:00–22:00."},
+       {id:"donggung", time:"20:00–21:20 (선택)", note:"월정교에서 숙소 주차지까지 걸어(약 10분) 차량 회수 후 저녁 식사, 차량으로 이동·재주차. 매표마감 21:30. 피곤하면 생략."},
+       {id:"stay", time:"19:30 (동궁 생략 시) · 21:40", note:"월정교에서 숙소까지 도보 약 10분(직선 0.7km). 동궁과 월지 후에는 자가용 귀환."}
      ],
      legs:[
+       {mode:"도보", min:"18-20", tag:"DERIVED · 직선 1.3km"},
        {mode:"도보", min:"8", tag:"DERIVED"},
        {mode:"도보", min:"8", tag:"DERIVED"},
        {mode:"도보", min:"4", tag:"DERIVED"},
-       {mode:"차량 회수 + 자가용", min:"30-45", tag:"추정 · 도보 회수·운전·주차, 저녁 식사 별도"}
+       {mode:"도보 + 차량 회수 + 자가용", min:"25-35", tag:"추정 · 월정교→숙소 주차지→동궁, 식사 별도"},
+       {mode:"자가용", min:"5-15", tag:"추정 · 동궁→숙소"}
      ]},
-    {day:2, title:"10/7(수) 보문 벨트 · 경주월드", meta:"종일 · 자가용 보문 권역",
+    {day:2, title:"10/7(수) 보문 벨트 · 경주월드", meta:"종일 · 숙소 출발·귀환 · 자가용",
      stops:[
-       {id:"hwangnyongwon", time:"09:15–09:45 (외관 조망)", note:"시내 숙소에서 자가용 이동 약 20–30분 추정. 합법적인 주차·공공 보행로 조망만 전제; 도로변 정차·사유 경내 진입은 하지 않음. 내부는 예약 문의."},
+       {id:"stay", time:"08:45 출발", note:"아침 식사 후 숙소에서 자가용 출발. 보문 권역까지 직선 약 7km."},
+       {id:"hwangnyongwon", time:"09:15–09:45 (외관 조망)", note:"숙소에서 자가용 이동 약 20–30분 추정. 합법적인 주차·공공 보행로 조망만 전제; 도로변 정차·사유 경내 진입은 하지 않음. 내부는 예약 문의."},
        {id:"gjworld", time:"10:00–17:20", note:"황룡원 외관 조망 후 자가용으로 이동·주차. 주차장 위치·요금은 공식 안내/현장 확인. 평일 10:00–18:00 운영, 놀이기구 운휴는 당일 확인."},
-       {id:"expopark", time:"18:00–20:00 (선택)", note:"EX펌킨나잇 별도 야간권. 간단 식사·이동 시간을 두고 입장. 무료 대안은 보문호반길 가까운 구간 산책."}
+       {id:"expopark", time:"18:00–20:00 (선택)", note:"EX펌킨나잇 별도 야간권. 간단 식사·이동 시간을 두고 입장. 무료 대안은 보문호반길 가까운 구간 산책."},
+       {id:"stay", time:"17:50 (엑스포 생략 시) · 20:30", note:"경주월드 또는 엑스포에서 숙소로 자가용 귀환(직선 약 6.6–7km)."}
      ],
      legs:[
+       {mode:"자가용 + 주차", min:"20-30", tag:"추정 · 숙소→황룡원"},
        {mode:"자가용 + 주차", min:"10-20", tag:"추정 · 황룡원→경주월드"},
-       {mode:"자가용 + 주차", min:"15-25", tag:"추정 · 경주월드→엑스포"}
+       {mode:"자가용 + 주차", min:"15-25", tag:"추정 · 경주월드→엑스포"},
+       {mode:"자가용", min:"25-35", tag:"추정 · 엑스포/경주월드→숙소"}
      ]},
     {day:3, title:"10/8(목) 천년숲정원 · 박물관 · 귀가", meta:"자가용 · 15:30 전후 귀가 출발 예시",
      stops:[
-       {id:"cheonnyeon", time:"10:00–11:15", note:"09:00–09:30 체크아웃 후 자가용으로 정원 이동·주차. 짐은 차량에 싣되 귀중품은 지참. 10:00 개장 이후 숲 산책."},
+       {id:"stay", time:"09:00–09:30 (체크아웃)", note:"체크아웃 11:00(후기 기준 확인 필요)보다 일찍 출발. 짐은 차량에 싣되 귀중품은 지참."},
+       {id:"cheonnyeon", time:"10:00–11:15", note:"숙소에서 자가용으로 정원 이동·주차(약 10–15분 추정, 직선 3.4km). 10:00 개장 이후 숲 산책."},
        {id:"museum", time:"12:30–15:00", note:"정원에서 차량 이동, 점심·주차 후 특별전과 상설전 관람. 주차 유료화 안내 확인. 15:00–15:30 차량 회수·휴식 후 순천 귀가 출발 예시; 운전자 피로에 맞춰 조정."}
      ],
      legs:[
+       {mode:"자가용 + 주차", min:"10-15", tag:"추정 · 숙소→정원"},
        {mode:"자가용 + 주차", min:"20-30", tag:"추정 · 정원→박물관, 점심 별도"}
      ]}
-  ]
+  ],
+  food: /*FOOD_START*/[{"id":"r1-01","n":1,"day":1,"name":"포석로 소갈비찜","cat":"한식","meal":"식사","lat":35.8359027,"lon":129.2118391,"addr":"경북 경주시 포석로1068번길 22","open":"화 10:30–21:00 (브레이크 15:00–16:00) · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 16,025건 · 평점 4.79","sources":["https://pcmap.place.naver.com/place/1196479801"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-02","n":2,"day":1,"name":"료미","cat":"일식당","meal":"식사","lat":35.835637,"lon":129.2097548,"addr":"경북 경주시 포석로 1058-1 료미","open":"화 11:00–21:00 (브레이크 15:00–17:00) · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 18,508건 · 평점 4.67","sources":["https://pcmap.place.naver.com/place/1614701657"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-03","n":3,"day":1,"name":"료코","cat":"돈가스","meal":"식사","lat":35.8353096,"lon":129.2127623,"addr":"경북 경주시 첨성로99번길 24 료코","open":"화 11:00–21:30 (브레이크 15:30–17:00) · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 13,526건 · 평점 4.78","sources":["https://pcmap.place.naver.com/place/1812825868"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-04","n":4,"day":1,"name":"소소함박 황리단길점","cat":"한식","meal":"식사","lat":35.8379945,"lon":129.2101639,"addr":"경북 경주시 손효자길 21 소소함박 황리단길점","open":"화 11:00–21:00 (브레이크 15:30–17:00) · 라스트오더 20:10","menu":"","why":"네이버 방문자 리뷰 11,734건 · 평점 4.82","sources":["https://pcmap.place.naver.com/place/1928053899"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-05","n":5,"day":1,"name":"후프후프","cat":"브런치카페","meal":"카페","lat":35.8391436,"lon":129.2086493,"addr":"경북 경주시 태종로 736 후프후프","open":"화 11:00–18:00 · 라스트오더 17:30","menu":"","why":"네이버 방문자 리뷰 10,828건 · 평점 4.84","sources":["https://pcmap.place.naver.com/place/1008616984"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-06","n":6,"day":1,"name":"대릉갈비","cat":"육류,고기요리","meal":"식사","lat":35.8358799,"lon":129.2124072,"addr":"경북 경주시 포석로1068번길 27 1층","open":"화 11:30–21:30 (브레이크 15:00–17:00) · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 9,369건 · 평점 4.81","sources":["https://pcmap.place.naver.com/place/1659298112"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-07","n":7,"day":1,"name":"딤타오 경주점","cat":"딤섬,중식만두","meal":"식사","lat":35.8367398,"lon":129.2087309,"addr":"경북 경주시 사정로 51","open":"화 11:00–21:00 (브레이크 15:30–16:30) · 라스트오더 15:00","menu":"","why":"네이버 방문자 리뷰 8,074건 · 평점 4.89","sources":["https://pcmap.place.naver.com/place/1780128233"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-08","n":8,"day":1,"name":"도화당","cat":"칼국수,만두","meal":"식사","lat":35.8364594,"lon":129.2176956,"addr":"경북 경주시 쪽샘길 11 1층","open":"화 11:00–21:00 (브레이크 15:00–17:00) · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 7,678건 · 평점 4.89","sources":["https://pcmap.place.naver.com/place/1139476412"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-09","n":9,"day":1,"name":"황리화덕가","cat":"피자","meal":"식사","lat":35.8356705,"lon":129.2083501,"addr":"경북 경주시 사정로50번길 12 황리화덕가","open":"화 11:00–21:00 (브레이크 15:00–17:00) · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 6,985건 · 평점 4.88","sources":["https://pcmap.place.naver.com/place/1531464136"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-10","n":10,"day":1,"name":"취향가옥","cat":"한식","meal":"식사","lat":35.838657,"lon":129.2093158,"addr":"경북 경주시 포석로1095번길 7","open":"화 11:00–21:00 (브레이크 15:50–17:00) · 라스트오더 15:00","menu":"","why":"네이버 방문자 리뷰 8,342건 · 평점 4.8","sources":["https://pcmap.place.naver.com/place/1578798648"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-11","n":11,"day":1,"name":"범외양간 황리단길본점","cat":"소고기구이","meal":"식사","lat":35.8372927,"lon":129.2093825,"addr":"경북 경주시 사정로57번길 10 범외양간","open":"화 11:00–21:00 · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 7,003건 · 평점 4.85","sources":["https://pcmap.place.naver.com/place/1568699875"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-12","n":12,"day":1,"name":"외가 황리단길본점","cat":"한식","meal":"식사","lat":35.8370587,"lon":129.2092402,"addr":"경북 경주시 사정로57번길 7 외가","open":"화 11:00–20:30 (브레이크 15:00–17:00) · 라스트오더 19:50","menu":"","why":"네이버 방문자 리뷰 7,172건 · 평점 4.87","sources":["https://pcmap.place.naver.com/place/1712968835"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-13","n":13,"day":1,"name":"온목당 경주황리단길본점","cat":"한식","meal":"식사","lat":35.8369546,"lon":129.2094453,"addr":"경북 경주시 사정로57번길 6 1층","open":"화 11:00–21:30 (브레이크 15:00–17:00) · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 5,863건 · 평점 4.87","sources":["https://pcmap.place.naver.com/place/1605604986"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-14","n":14,"day":1,"name":"향택 경주","cat":"한식","meal":"식사","lat":35.8371313,"lon":129.2090937,"addr":"경북 경주시 사정로57번길 7-7 향택","open":"화 11:00–20:30 (브레이크 15:30–17:00) · 라스트오더 15:00","menu":"","why":"네이버 방문자 리뷰 5,247건 · 평점 4.88","sources":["https://pcmap.place.naver.com/place/1693973514"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-15","n":15,"day":1,"name":"룸펜 경주","cat":"카페","meal":"카페","lat":35.8407898,"lon":129.2021162,"addr":"경북 경주시 강변로 184-11 1층 룸펜","open":"화 10:00–20:00 · 라스트오더 19:30","menu":"","why":"네이버 방문자 리뷰 5,271건 · 평점 4.91","sources":["https://pcmap.place.naver.com/place/1642658837"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-16","n":16,"day":1,"name":"경주대게닭강정","cat":"치킨,닭강정","meal":"식사","lat":35.8365498,"lon":129.209751,"addr":"경북 경주시 포석로 1072","open":"화 10:00–22:00","menu":"","why":"네이버 방문자 리뷰 5,348건 · 평점 4.73","sources":["https://pcmap.place.naver.com/place/1758973678"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-17","n":17,"day":1,"name":"꾸덕희","cat":"카페,디저트","meal":"카페","lat":35.8371366,"lon":129.2102464,"addr":"경북 경주시 포석로 1078-6","open":"화 11:00–19:00","menu":"","why":"네이버 방문자 리뷰 4,317건 · 평점 4.91","sources":["https://pcmap.place.naver.com/place/2032487356"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-18","n":18,"day":1,"name":"신라당 경주","cat":"카페,디저트","meal":"카페","lat":35.8378875,"lon":129.2091393,"addr":"경북 경주시 사정로57번길 15","open":"화 10:00–21:00 · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 3,727건 · 평점 4.87","sources":["https://pcmap.place.naver.com/place/2005911897"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-19","n":19,"day":1,"name":"스테이550","cat":"케이크전문","meal":"카페","lat":35.8363971,"lon":129.2091708,"addr":"경북 경주시 사정로 56-1 스테이550카페","open":"화 09:30–21:00","menu":"","why":"네이버 방문자 리뷰 4,692건 · 평점 4.61","sources":["https://pcmap.place.naver.com/place/1279735793"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r1-20","n":20,"day":1,"name":"토종 찰보리빵 경주빵 황남본점","cat":"베이커리","meal":"카페","lat":35.839337,"lon":129.209765,"addr":"경북 경주시 태종로 746 토종찰보리빵경주빵황남본점","open":"화 08:00–22:00","menu":"","why":"네이버 방문자 리뷰 5,001건 · 평점 4.54","sources":["https://pcmap.place.naver.com/place/12098676"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-01","n":1,"day":2,"name":"올바릇식당 경주점","cat":"조개요리","meal":"식사","lat":35.8472389,"lon":129.2802123,"addr":"경북 경주시 보문로 368-5 1층 올바릇식당 경주점","open":"수 11:00–20:10 (브레이크 15:30–17:00) · 라스트오더 19:30","menu":"","why":"네이버 방문자 리뷰 8,030건 · 평점 4.72","sources":["https://pcmap.place.naver.com/place/1090445093"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-02","n":2,"day":2,"name":"효은옥 경주분점","cat":"한식","meal":"식사","lat":35.852513,"lon":129.2647527,"addr":"경북 경주시 북군3길 12-6 1층 효은옥 경주","open":"수 11:00–21:00 (브레이크 15:00–17:00) · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 6,532건 · 평점 4.78","sources":["https://pcmap.place.naver.com/place/1096040914"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-03","n":3,"day":2,"name":"보문뜰","cat":"육류,고기요리","meal":"식사","lat":35.8426846,"lon":129.2517043,"addr":"경북 경주시 경감로 142-3","open":"수 10:20–20:30 (브레이크 15:20–17:00) · 라스트오더 14:30","menu":"","why":"네이버 방문자 리뷰 7,409건 · 평점 4.5","sources":["https://pcmap.place.naver.com/place/36072056"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-04","n":4,"day":2,"name":"서민식당","cat":"한식","meal":"식사","lat":35.8336867,"lon":129.2921555,"addr":"경북 경주시 경감로 633 서민식당","open":"수 10:30–21:00 · 라스트오더 20:20","menu":"","why":"네이버 방문자 리뷰 6,727건 · 평점 4.47","sources":["https://pcmap.place.naver.com/place/38427621"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-05","n":5,"day":2,"name":"아덴","cat":"카페,디저트","meal":"카페","lat":35.8431367,"lon":129.2836246,"addr":"경북 경주시 한국관광1번로 34 아덴카페","open":"수 10:00–22:00","menu":"","why":"네이버 방문자 리뷰 7,293건 · 평점 4.43","sources":["https://pcmap.place.naver.com/place/671279368"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-06","n":6,"day":2,"name":"아임맛","cat":"한식","meal":"식사","lat":35.8343841,"lon":129.2899182,"addr":"경북 경주시 엑스포로 80 미탐시티 1층 아임맛","open":"수 10:30–20:30 · 라스트오더 19:40","menu":"","why":"네이버 방문자 리뷰 3,800건 · 평점 4.76","sources":["https://pcmap.place.naver.com/place/1415888521"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-07","n":7,"day":2,"name":"우마왕 경주본점","cat":"갈비탕","meal":"식사","lat":35.8428658,"lon":129.2542505,"addr":"경북 경주시 숲머리길 168","open":"수 09:00–20:20 (브레이크 15:20–17:00) · 라스트오더 14:40","menu":"","why":"네이버 방문자 리뷰 4,301건 · 평점 4.59","sources":["https://pcmap.place.naver.com/place/1945318225"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-08","n":8,"day":2,"name":"엘로우","cat":"카페","meal":"카페","lat":35.8450628,"lon":129.2719235,"addr":"경북 경주시 경감로 375-16","open":"수 10:00–22:00 · 라스트오더 21:30","menu":"","why":"네이버 방문자 리뷰 5,342건 · 평점 4.43","sources":["https://pcmap.place.naver.com/place/1313862824"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-09","n":9,"day":2,"name":"아화전통국수 보문직영점","cat":"국수","meal":"식사","lat":35.8525051,"lon":129.2635453,"addr":"경북 경주시 북군길 25 아화전통국수","open":"수 10:20–20:40 (브레이크 15:30–16:00) · 라스트오더 20:10","menu":"","why":"네이버 방문자 리뷰 2,365건 · 평점 4.8","sources":["https://pcmap.place.naver.com/place/1897303012"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-10","n":10,"day":2,"name":"야드","cat":"카페,디저트","meal":"카페","lat":35.8335083,"lon":129.2782264,"addr":"경북 경주시 천군2길 2 (경주월드 대로변에 위치)","open":"수 09:00–20:00 · 라스트오더 19:30","menu":"","why":"네이버 방문자 리뷰 2,477건 · 평점 4.63","sources":["https://pcmap.place.naver.com/place/194283359"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-11","n":11,"day":2,"name":"순두부짬뽕 동궁 보문단지점","cat":"중식당","meal":"식사","lat":35.8528229,"lon":129.2635343,"addr":"경북 경주시 북군길 27","open":"수 09:00–21:00 · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 3,026건 · 평점 4.6","sources":["https://pcmap.place.naver.com/place/35900597"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-12","n":12,"day":2,"name":"경주천년한우 보문점","cat":"소고기구이","meal":"식사","lat":35.836761,"lon":129.2860492,"addr":"경북 경주시 보문로 545-9","open":"수 10:00–21:00","menu":"","why":"네이버 방문자 리뷰 2,643건 · 평점 4.42","sources":["https://pcmap.place.naver.com/place/33666515"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-13","n":13,"day":2,"name":"비비비당 경주","cat":"카페","meal":"카페","lat":35.8413289,"lon":129.2859752,"addr":"경북 경주시 보문로 484-7 1층","open":"수 10:00–18:00 · 라스트오더 17:30","menu":"","why":"네이버 방문자 리뷰 1,347건 · 평점 4.86","sources":["https://pcmap.place.naver.com/place/2075529054"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-14","n":14,"day":2,"name":"경주고기","cat":"육류,고기요리","meal":"식사","lat":35.8447477,"lon":129.2883776,"addr":"경북 경주시 천북남로 27 209호","open":"수 11:00–23:00","menu":"","why":"네이버 방문자 리뷰 1,692건 · 평점 4.69","sources":["https://pcmap.place.naver.com/place/1855104809"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-15","n":15,"day":2,"name":"경주천년한우 보문명품관","cat":"소고기구이","meal":"식사","lat":35.8368113,"lon":129.2859662,"addr":"경북 경주시 보문로 545-9 경주천년한우 보문명품관","open":"수 11:30–21:00 (브레이크 15:00–16:30) · 라스트오더 20:15","menu":"","why":"네이버 방문자 리뷰 2,122건 · 평점 4.51","sources":["https://pcmap.place.naver.com/place/33647532"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-16","n":16,"day":2,"name":"월성돼지국밥","cat":"한식","meal":"식사","lat":35.8334544,"lon":129.2774891,"addr":"경북 경주시 경감로 504-4 1층 101호","open":"수 08:00–22:00 · 라스트오더 21:00","menu":"","why":"네이버 방문자 리뷰 1,385건 · 평점 4.8","sources":["https://pcmap.place.naver.com/place/1083971219"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-17","n":17,"day":2,"name":"브런치카페 포레소메","cat":"브런치","meal":"식사","lat":35.8422136,"lon":129.2511963,"addr":"경북 경주시 숲머리길 141 (보문단지입구) 브런치 샐러드 피자 파스타 카페맛집","open":"수 10:00–20:00 · 라스트오더 18:30","menu":"","why":"네이버 방문자 리뷰 1,523건 · 평점 4.77","sources":["https://pcmap.place.naver.com/place/1094818326"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-18","n":18,"day":2,"name":"명품제주통갈치 경주본점","cat":"한정식","meal":"식사","lat":35.8430154,"lon":129.2546996,"addr":"경북 경주시 숲머리길 174","open":"수 11:00–21:00 · 라스트오더 20:20","menu":"","why":"네이버 방문자 리뷰 1,106건 · 평점 4.9","sources":["https://pcmap.place.naver.com/place/1366495555"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-19","n":19,"day":2,"name":"플라비우스","cat":"카페,디저트","meal":"카페","lat":35.8527197,"lon":129.2680687,"addr":"경북 경주시 보문로 132-16 보문콜로세움 플라비우스","open":"수 10:00–21:00","menu":"","why":"네이버 방문자 리뷰 1,723건 · 평점 4.41","sources":["https://pcmap.place.naver.com/place/1951484646"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r2-20","n":20,"day":2,"name":"수제팥집 호문당","cat":"베이커리","meal":"카페","lat":35.8444149,"lon":129.2902044,"addr":"경북 경주시 천북남로 14 플래시백 계림 내 1, 2층","open":"수 10:00–20:00","menu":"","why":"네이버 방문자 리뷰 751건 · 평점 4.85","sources":["https://pcmap.place.naver.com/place/2061998335"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-01","n":1,"day":3,"name":"백년손님","cat":"한식","meal":"식사","lat":35.8349805,"lon":129.2127657,"addr":"경북 경주시 첨성로99번길 20 1층 백년손님","open":"목 09:00–20:00 (브레이크 15:00–16:40)","menu":"","why":"네이버 방문자 리뷰 5,378건 · 평점 4.74","sources":["https://pcmap.place.naver.com/place/15230740"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-02","n":2,"day":3,"name":"수경사","cat":"한식","meal":"식사","lat":35.8385293,"lon":129.2090355,"addr":"경북 경주시 사정로57번길 25 수경사","open":"목 11:00–21:30 · 라스트오더 21:00","menu":"","why":"네이버 방문자 리뷰 3,576건 · 평점 4.93","sources":["https://pcmap.place.naver.com/place/1726052789"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-03","n":3,"day":3,"name":"우두갈비","cat":"육류,고기요리","meal":"식사","lat":35.8390306,"lon":129.2079499,"addr":"경북 경주시 태종로 730 1층","open":"목 11:00–21:00 (브레이크 15:00–16:00) · 라스트오더 20:10","menu":"","why":"네이버 방문자 리뷰 3,969건 · 평점 4.84","sources":["https://pcmap.place.naver.com/place/1750971507"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-04","n":4,"day":3,"name":"순두부짬뽕 동궁 황리단길점","cat":"중식당","meal":"식사","lat":35.8341505,"lon":129.2141187,"addr":"경북 경주시 포석로1050번길 42","open":"목 09:00–21:00 · 라스트오더 20:30","menu":"","why":"네이버 방문자 리뷰 4,117건 · 평점 4.81","sources":["https://pcmap.place.naver.com/place/1330610770"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-05","n":5,"day":3,"name":"월계관 경주황리단길 본점","cat":"한식","meal":"식사","lat":35.8371806,"lon":129.2094394,"addr":"경북 경주시 사정로57번길 8-1 1층 월계관","open":"목 11:00–21:00 (브레이크 15:00–17:00) · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 3,830건 · 평점 4.83","sources":["https://pcmap.place.naver.com/place/1929006358"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-06","n":6,"day":3,"name":"소바카게 경주점","cat":"일식당","meal":"식사","lat":35.835374,"lon":129.2118422,"addr":"경북 경주시 첨성로99번길 25-5 소바카게 경주점","open":"목 11:00–21:00 (브레이크 15:30–17:00) · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 3,614건 · 평점 4.8","sources":["https://pcmap.place.naver.com/place/1607855573"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-07","n":7,"day":3,"name":"운수대통 닭갈비","cat":"닭갈비","meal":"식사","lat":35.8416487,"lon":129.2124511,"addr":"경북 경주시 원효로 104-15 1층","open":"목 11:00–22:30 · 라스트오더 21:30","menu":"","why":"네이버 방문자 리뷰 4,043건 · 평점 4.76","sources":["https://pcmap.place.naver.com/place/201363537"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-08","n":8,"day":3,"name":"복길 경주본점","cat":"한식","meal":"식사","lat":35.8331478,"lon":129.2099711,"addr":"경북 경주시 첨성로 71","open":"목 10:30–21:00 (브레이크 16:00–17:00) · 라스트오더 20:10","menu":"","why":"네이버 방문자 리뷰 3,254건 · 평점 4.87","sources":["https://pcmap.place.naver.com/place/1071926628"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-09","n":9,"day":3,"name":"황남정 황남갈비 경주황리단길본점","cat":"한식","meal":"식사","lat":35.8345324,"lon":129.2129818,"addr":"경북 경주시 포석로1050번길 33","open":"목 10:30–22:00","menu":"","why":"네이버 방문자 리뷰 4,131건 · 평점 4.74","sources":["https://pcmap.place.naver.com/place/1041754025"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-10","n":10,"day":3,"name":"교동집밥 경주황리단길본점","cat":"백반,가정식","meal":"식사","lat":35.8343069,"lon":129.2152767,"addr":"경북 경주시 첨성로 127 2층","open":"목 11:00–21:00 · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 3,628건 · 평점 4.69","sources":["https://pcmap.place.naver.com/place/38462771"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-11","n":11,"day":3,"name":"한다솥 경주점","cat":"한정식","meal":"식사","lat":35.833264,"lon":129.21447,"addr":"경북 경주시 첨성로 111","open":"목 10:30–21:00 · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 2,738건 · 평점 4.83","sources":["https://pcmap.place.naver.com/place/1894028398"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-12","n":12,"day":3,"name":"다인매운등갈비찜","cat":"육류,고기요리","meal":"식사","lat":35.8362194,"lon":129.2172408,"addr":"경북 경주시 원화로181번길 25 다인매운등갈비찜","open":"목 11:00–21:00 (브레이크 15:00–16:30)","menu":"","why":"네이버 방문자 리뷰 3,664건 · 평점 4.63","sources":["https://pcmap.place.naver.com/place/1597279583"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-13","n":13,"day":3,"name":"오칼국수","cat":"칼국수,만두","meal":"식사","lat":35.8341373,"lon":129.2111086,"addr":"경북 경주시 첨성로81번길 11-2 오칼국수","open":"목 10:00–22:00 (브레이크 16:00–17:00) · 라스트오더 21:30","menu":"","why":"네이버 방문자 리뷰 2,800건 · 평점 4.8","sources":["https://pcmap.place.naver.com/place/1493619805"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-14","n":14,"day":3,"name":"옥포554 경주점","cat":"한식","meal":"식사","lat":35.843294,"lon":129.2109456,"addr":"경북 경주시 동성로 96-1 1층 옥포554 경주점","open":"목 11:30–24:00 (브레이크 14:30–16:30)","menu":"","why":"네이버 방문자 리뷰 2,100건 · 평점 4.97","sources":["https://pcmap.place.naver.com/place/1359376866"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-15","n":15,"day":3,"name":"987피자","cat":"피자","meal":"식사","lat":35.8368687,"lon":129.2114355,"addr":"경북 경주시 포석로1092번길 26","open":"목 12:00–22:00 · 라스트오더 21:00","menu":"","why":"네이버 방문자 리뷰 2,649건 · 평점 4.68","sources":["https://pcmap.place.naver.com/place/38279045"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-16","n":16,"day":3,"name":"케이찹사라다 황리단길점","cat":"베이커리","meal":"식사","lat":35.8344663,"lon":129.2110273,"addr":"경북 경주시 첨성로81번길 15-1","open":"목 11:00–20:30","menu":"","why":"네이버 방문자 리뷰 2,419건 · 평점 4.85","sources":["https://pcmap.place.naver.com/place/2016560375"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-17","n":17,"day":3,"name":"경주쉼족욕카페 황리단점","cat":"테마카페","meal":"식사","lat":35.8343197,"lon":129.215123,"addr":"경북 경주시 포석로1050번길 51 2층","open":"목 12:00–20:00 · 라스트오더 19:20","menu":"","why":"네이버 방문자 리뷰 1,915건 · 평점 4.9","sources":["https://pcmap.place.naver.com/place/1983137551"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-18","n":18,"day":3,"name":"홍익돈까스 경주점","cat":"돈가스","meal":"식사","lat":35.8424672,"lon":129.2323577,"addr":"경북 경주시 알천남로 316","open":"목 11:30–20:30 (브레이크 14:30–17:00) · 라스트오더 20:00","menu":"","why":"네이버 방문자 리뷰 2,353건 · 평점 4.79","sources":["https://pcmap.place.naver.com/place/1094939212"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-19","n":19,"day":3,"name":"황오명과 경주황리단길본점","cat":"베이커리","meal":"카페","lat":35.8358737,"lon":129.2097112,"addr":"경북 경주시 포석로 1062 황오명과","open":"목 10:30–20:00","menu":"","why":"네이버 방문자 리뷰 1,841건 · 평점 4.91","sources":["https://pcmap.place.naver.com/place/1954353042"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"},{"id":"r3-20","n":20,"day":3,"name":"신라명가 본점 경주빵 찰보리빵","cat":"베이커리","meal":"카페","lat":35.8411922,"lon":129.216187,"addr":"경북 경주시 태종로 807 신라명가 본점","open":"목 09:00–19:00","menu":"","why":"네이버 방문자 리뷰 1,728건 · 평점 4.77","sources":["https://pcmap.place.naver.com/place/21795649"],"verified":true,"caveat":"네이버 플레이스 2026-10-01 조회 기준. 임시 휴무·브레이크타임은 방문 전 확인"}]/*FOOD_END*/
 };
 /* ============================================= */
 const DAYC = {1:'#e07a3f',2:'#3f7fe0',3:'#7a4fd0'};
-const state = { day:'all', recs:true, schematic:false, tileFailed:false, leafletReady:false };
+const state = { day:'all', recs:true, food:true, schematic:false, tileFailed:false, leafletReady:false };
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let map=null, pinLayer=[], routeLayers={1:null,2:null,3:null}, arrowLayer=[];
@@ -339,14 +375,28 @@ let scPins=[];
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function placeById(id){return DATA.places.find(p=>p.id===id);}
-function pinKind(p){return p.kind==='user'?'u':p.kind==='rec'?'r':'h';}
+function pinKind(p){return p.kind==='user'?'u':p.kind==='rec'?'r':p.kind==='stay'?'s':'h';}
+const KIND={user:{l:'직접 선택',bg:'#fbe9e9',fg:'#d64545',num:'var(--user-red)'},rec:{l:'추천',bg:'#e6f4ec',fg:'#2e8b57',num:'var(--rec-green)'},stay:{l:'숙소',bg:'#e4edfb',fg:'#1f5fbf',num:'var(--stay-blue)'},hub:{l:'교통 허브',bg:'#eef0f2',fg:'#59616b',num:'#6b7280'}};
+function dayName(d){return ['','10/6 화','10/7 수','10/8 목'][d];}
+function foodVisible(f){return state.food&&(state.day==='all'||String(f.day)===String(state.day));}
+function foodPopup(f){
+  const links=(f.sources||[]).slice(0,3).map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener">출처 ${i+1}</a>`).join('');
+  return `<div class="pp"><h4>${esc(f.name)} <span class="badge" style="background:#fff0d9;color:#a85f00">식당 · ${dayName(f.day)}</span></h4>
+    <div class="cat">${esc(f.cat)} · ${esc(f.meal)} · ${esc(f.addr)}</div>
+    <div class="kv"><b>영업</b> ${esc(f.open)}</div>
+    ${f.menu?`<div class="kv"><b>메뉴</b> ${esc(f.menu)}</div>`:''}
+    <div class="kv">${esc(f.why)}</div>
+    <div class="kv" style="color:#a85f00">${f.verified?'운영 정보 확인됨(출처 기준)':'운영 정보 미확인'}${f.caveat?' · '+esc(f.caveat):''}</div>
+    <div class="links">${links}</div></div>`;
+}
 
 /* ---------- popup html ---------- */
 function popupHTML(p){
   const days = p.days.map(d=>`<span class="badge">10/${5+d}</span>`).join('');
+  const K=KIND[p.kind]||KIND.hub;
   const links = p.links.map(l=>`<a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.t)}</a>`).join('');
   return `<div class="pp">
-    <h4>${esc(p.name)} <span class="badge" style="background:${p.kind==='user'?'#fbe9e9':p.kind==='rec'?'#e6f4ec':'#eef0f2'};color:${p.kind==='user'?'#d64545':p.kind==='rec'?'#2e8b57':'#59616b'}">${p.kind==='user'?'직접 선택':p.kind==='rec'?'추천':'교통 허브'}</span></h4>
+    <h4>${esc(p.name)} <span class="badge" style="background:${K.bg};color:${K.fg}">${K.l}</span></h4>
     <div class="cat">${esc(p.cat)} · ${esc(p.addr)}</div>
     ${p.hours?`<div class="kv"><b>운영</b> ${esc(p.hours)}</div>`:''}
     ${p.fee?`<div class="kv"><b>요금</b> ${esc(p.fee)}</div>`:''}
@@ -360,6 +410,10 @@ function popupHTML(p){
 function makeIcon(p){
   return L.divIcon({className:'', html:`<div class="pin ${pinKind(p)}" data-pid="${p.id}" data-lat="${p.lat}" data-lon="${p.lon}" data-kind="${p.kind}">${p.no||''}</div>`, iconSize:[26,26], iconAnchor:[13,13]});
 }
+function makeFoodIcon(f){
+  return L.divIcon({className:'', html:`<div class="pin f" data-fid="${f.id}" data-day="${f.day}" data-lat="${f.lat}" data-lon="${f.lon}" data-kind="food">${f.n}</div>`, iconSize:[20,20], iconAnchor:[10,10]});
+}
+let foodLayer=[];
 function bearing(a,b){
   const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
   const y=Math.sin(toRad(b[1]-a[1]))*Math.cos(toRad(b[0]));
@@ -389,6 +443,7 @@ function refreshVisibility(){
     if(!map.hasLayer(m))m.addTo(map);
     m.setIcon(makeIcon(p));
   });
+  foodLayer.forEach(({f,m})=>{const v=foodVisible(f);if(v&&!map.hasLayer(m))m.addTo(map);if(!v&&map.hasLayer(m))map.removeLayer(m);});
   // routes
   for(const d of [1,2,3]){
     const vis = state.day==='all'||+state.day===d;
@@ -401,6 +456,9 @@ function refreshVisibility(){
   // itinerary highlight
   $$('.daycard').forEach(el=>{el.style.display=(state.day==='all'||el.dataset.day===state.day)?'':'none';});
   $$('#recbox').forEach(el=>{el.style.display=state.recs?'':'none';});
+  $$('#foodbox').forEach(el=>{el.style.display=state.food?'':'none';});
+  $$('#foodbox .fday').forEach(el=>{el.style.display=(state.day==='all'||el.dataset.day===state.day)?'':'none';});
+  $$('#foodbox .stop').forEach(el=>{el.style.display=(state.day==='all'||el.dataset.day===state.day)?'':'none';});
   $$('#recs .stop').forEach(el=>{
     const visible=state.day==='all'||el.dataset.days.split(',').includes(state.day);
     el.style.display=visible?'':'none';
@@ -410,7 +468,7 @@ function refreshVisibility(){
 }
 function fitAll(){
   const places=DATA.places.filter(p=>(p.kind!=='rec'||state.recs)&&(state.day==='all'||p.days.includes(+state.day)));
-  const pts=places.map(p=>[p.lat,p.lon]);
+  const pts=places.map(p=>[p.lat,p.lon]).concat(DATA.food.filter(foodVisible).map(f=>[f.lat,f.lon]));
   if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(state.day==='all'?0.12:0.18),{animate:false});
 }
 
@@ -424,7 +482,8 @@ function buildSchematic(){
   const W=Math.max(wrap.clientWidth,320), H=Math.max(wrap.clientHeight,300);
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   const visiblePlaces=DATA.places.filter(p=>(p.kind!=='rec'||state.recs)&&(state.day==='all'||p.days.includes(+state.day)));
-  const lats=visiblePlaces.map(p=>p.lat), lons=visiblePlaces.map(p=>p.lon);
+  const vf=DATA.food.filter(foodVisible);
+  const lats=visiblePlaces.map(p=>p.lat).concat(vf.map(f=>f.lat)), lons=visiblePlaces.map(p=>p.lon).concat(vf.map(f=>f.lon));
   const pad=state.day==='all'?0.02:0.005;
   const bbox=[Math.min(...lats)-pad,Math.min(...lons)-pad,Math.max(...lats)+pad,Math.max(...lons)+pad];
   let inner='';
@@ -460,10 +519,18 @@ function buildSchematic(){
     el.onclick=ev=>{ev.stopPropagation();showScTip(p,x,y);};
     $('#schematic').appendChild(el); scPins.push(el);
   });
+  vf.forEach(f=>{
+    const [x,y]=project(f.lat,f.lon,bbox,W,H);
+    const el=document.createElement('div');
+    el.className='sc-pin f'; el.textContent=f.n; el.style.left=x+'px'; el.style.top=y+'px';
+    el.dataset.fid=f.id;el.dataset.lat=String(f.lat);el.dataset.lon=String(f.lon);el.dataset.kind='food';
+    el.onclick=ev=>{ev.stopPropagation();showScTip({__food:f},x,y);};
+    $('#schematic').appendChild(el); scPins.push(el);
+  });
 }
 function showScTip(p,x,y){
   const t=$('#sc-tip');
-  t.innerHTML=popupHTML(p);
+  t.innerHTML=p.__food?foodPopup(p.__food):popupHTML(p);
   t.style.display='block';
   const wrap=$('#mapwrap');
   t.style.left=Math.min(x+16,wrap.clientWidth-280)+'px';
@@ -474,6 +541,7 @@ function showScTip(p,x,y){
 function buildPanel(){
   $('#assump').innerHTML=`<b>기본 가정 (조정 가능)</b><br>${DATA.meta.assumptions.map(a=>'· '+a).join('<br>')}`;
   const daysEl=$('#days');
+  const kc=p=>KIND[p.kind]||KIND.hub;
   daysEl.innerHTML=DATA.itinerary.map(day=>`
     <div class="daycard" data-day="${day.day}">
       <div class="dhead"><span class="chip" style="background:${DAYC[day.day]}"></span>${esc(day.title)}<span class="meta">${esc(day.meta)}</span></div>
@@ -482,9 +550,9 @@ function buildPanel(){
         const leg=day.legs?.[i-1];
         return `${leg?`<div class="leg"><span class="bar"></span>${esc(leg.mode)} 약 ${leg.min}분${leg.tag?` · <span class="tag">${esc(leg.tag)}</span>`:''}</div>`:''}
         <div class="stop" data-pid="${p.id}" data-day="${day.day}" role="button" tabindex="0" aria-label="${esc(p.name)} ${esc(s.time||'')}">
-          <div class="num" style="background:${p.kind==='user'?'var(--user-red)':p.kind==='rec'?'var(--rec-green)':'#6b7280'}">${i+1}</div>
+          <div class="num" style="background:${kc(p).num}">${i+1}</div>
           <div class="body">
-            <div class="nm">${esc(p.name)}<span class="kind ${p.kind==='user'?'u':p.kind==='rec'?'r':'h'}">${p.kind==='user'?'직접 선택':p.kind==='rec'?'추천':'교통 허브'}</span></div>
+            <div class="nm">${esc(p.name)}<span class="kind ${pinKind(p)}">${kc(p).l}</span></div>
             <div class="tm">${esc(s.time||'')}</div>
             ${s.note?`<div class="note">${esc(s.note)}</div>`:''}
           </div>
@@ -498,14 +566,35 @@ function buildPanel(){
       <div class="tm">${esc(p.hours||'')}</div>
       <div class="note">${esc(p.desc).slice(0,90)}…</div></div>
     </div>`).join('');
+  $('#foodlist').innerHTML=[1,2,3].map(d=>`<div class="fday" data-day="${d}">${dayName(d)} 식당 ${DATA.food.filter(f=>f.day===d).length}곳 (동선 아님)</div>`+DATA.food.filter(f=>f.day===d).map(f=>`
+    <div class="stop" data-fid="${f.id}" data-day="${d}" role="button" tabindex="0" aria-label="${esc(f.name)}">
+      <div class="num" style="background:var(--food-orange)">${f.n}</div>
+      <div class="body"><div class="nm">${esc(f.name)}</div>
+      <div class="tm">${esc(f.cat)} · ${esc(f.meal)}</div>
+      <div class="note">${esc(f.open)}${f.verified?'':' · <span class="unv">운영 미확인</span>'}</div></div>
+    </div>`).join('')).join('');
   $('#cautions').innerHTML=DATA.meta.cautions.map(c=>'· '+c).join('<br>');
   $('#srclist').innerHTML=DATA.meta.sources.map(s=>`<li><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a></li>`).join('');
   $$('.stop').forEach(el=>{
-    el.onclick=event=>{event.stopPropagation();selectPlace(el.dataset.pid,el);};
+    const go=()=>{el.dataset.fid?selectFood(el.dataset.fid,el):selectPlace(el.dataset.pid,el);};
+    el.onclick=event=>{event.stopPropagation();go();};
     el.onkeydown=event=>{
-      if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPlace(el.dataset.pid,el);}
+      if(event.key==='Enter'||event.key===' '){event.preventDefault();go();}
     };
   });
+}
+function selectFood(id,row){
+  const f=DATA.food.find(x=>x.id===id); if(!f)return;
+  $$('.stop.sel').forEach(e=>{e.classList.remove('sel');});
+  if(row){row.classList.add('sel');row.scrollIntoView({block:'nearest',behavior:'smooth'});}
+  if(state.schematic){
+    const el=scPins.find(n=>n.dataset.fid===id);
+    if(el){showScTip({__food:f},parseFloat(el.style.left),parseFloat(el.style.top));}
+    return;
+  }
+  const ent=foodLayer.find(e=>e.f.id===id);
+  if(ent){if(!map.hasLayer(ent.m))ent.m.addTo(map);ent.m.openPopup();}
+  map.setView([f.lat,f.lon],Math.max(map.getZoom(),16),{animate:false});
 }
 function selectPlace(id,row){
   const p=placeById(id); if(!p)return;
@@ -566,6 +655,13 @@ function initMap(){
     });
     pinLayer.push({p,m});
   });
+  DATA.food.forEach(f=>{
+    const m=L.marker([f.lat,f.lon],{icon:makeFoodIcon(f)}).addTo(map);
+    m.bindPopup(foodPopup(f),{maxWidth:280});
+    m.on('popupopen',()=>window.dispatchEvent(new Event('gyeongju-map-popup-open')));
+    m.on('click',()=>{const row=$(`#foodbox .stop[data-fid="${f.id}"]`);if(row){$$('.stop.sel').forEach(e=>{e.classList.remove('sel');});row.classList.add('sel');}});
+    foodLayer.push({f,m});
+  });
   buildRoutes();
   // tag arrows with day
   let ai=0;
@@ -590,6 +686,12 @@ $('#recToggle').addEventListener('click',()=>{
   state.recs=!state.recs;
   $('#recToggle').classList.toggle('off',!state.recs);
   $('#recToggle').setAttribute('aria-pressed',String(state.recs));
+  refreshVisibility();
+});
+$('#foodToggle').addEventListener('click',()=>{
+  state.food=!state.food;
+  $('#foodToggle').classList.toggle('off',!state.food);
+  $('#foodToggle').setAttribute('aria-pressed',String(state.food));
   refreshVisibility();
 });
 $('#fitBtn').addEventListener('click',()=>{
