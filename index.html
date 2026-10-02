@@ -157,7 +157,7 @@ section.src a:hover{text-decoration:underline}
       <button type="button" class="pill" data-day="3" aria-pressed="false"><span class="dot" style="background:var(--d3)"></span>10/8 목</button>
     </div>
     <button type="button" class="pill rec-toggle" id="recToggle" aria-pressed="true"><span class="dot"></span>추천 장소</button>
-    <button type="button" class="pill food-toggle" id="foodToggle" aria-pressed="true"><span class="dot"></span>식당 60</button>
+    <button type="button" class="pill food-toggle off" id="foodToggle" aria-pressed="false"><span class="dot"></span>식당 60</button>
     <button type="button" class="toolbtn" id="viewToggle">개략도 보기</button>
     <button type="button" class="toolbtn" id="fitBtn">전체 보기</button>
   </div>
@@ -382,7 +382,7 @@ const DATA = {
 };
 /* ============================================= */
 const DAYC = {1:'#e07a3f',2:'#3f7fe0',3:'#7a4fd0'};
-const state = { day:'all', recs:true, food:true, schematic:false, tileFailed:false, leafletReady:false };
+const state = { day:'all', recs:true, food:false, schematic:false, tileFailed:false, leafletReady:false };
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let map=null, pinLayer=[], routeLayers={1:null,2:null,3:null}, arrowLayer=[];
@@ -648,8 +648,35 @@ function boot(){
     else if(waited>8000){clearInterval(iv);setSchematic(true,'지도 라이브러리를 불러오지 못했습니다(오프라인일 수 있음). 개략도 모드로 표시합니다.');}
   },200);
 }
+/* 휠/트랙패드: Leaflet 기본 휠 줌은 트랙패드의 연속 이벤트를 줌 단계로 누적해 한 번 쓸어도 줌이 계속된다.
+   핀치(ctrlKey)는 부드럽게 줌, 두 손가락 스크롤은 이동(pan), 마우스 휠 한 칸은 0.5단계 줌으로 처리하고 프레임당 한 번만 적용한다. */
+function setupWheel(){
+  const el=map.getContainer();
+  let pz=0,pan=[0,0],pt=null,raf=0,lastNotch=0;
+  const flush=()=>{raf=0;
+    if(pan[0]||pan[1]){const p=pan;pan=[0,0];map.panBy(p,{animate:false});}
+    if(pz){const dz=pz;pz=0;const z=Math.max(map.getMinZoom(),Math.min(map.getMaxZoom(),map.getZoom()+dz));if(Math.abs(z-map.getZoom())>1e-4)map.setZoomAround(pt,z,{animate:false});}
+  };
+  const sched=()=>{if(!raf)raf=requestAnimationFrame(flush);};
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const unit=e.deltaMode===1?16:e.deltaMode===2?400:1;
+    const dx=e.deltaX*unit,dy=e.deltaY*unit;
+    pt=map.mouseEventToContainerPoint(e);
+    if(e.ctrlKey){ // 트랙패드 핀치(또는 Ctrl+휠): 연속 줌, 한 이벤트 최대 ±0.25단계
+      pz+=Math.max(-0.25,Math.min(0.25,-dy/120));sched();return;
+    }
+    const mouseNotch=e.deltaMode!==0||(dx===0&&Number.isInteger(dy)&&Math.abs(dy)>=100);
+    if(mouseNotch){ // 마우스 휠 한 칸: 0.5단계, 80ms 안의 연속 칸은 한 번으로 묶음
+      const now=performance.now();if(now-lastNotch<80)return;lastNotch=now;
+      pz+=dy<0?0.5:-0.5;sched();return;
+    }
+    pan[0]+=dx;pan[1]+=dy;sched(); // 트랙패드 두 손가락 스크롤: 지도 이동
+  },{passive:false});
+}
 function initMap(){
-  map=L.map('map',{zoomControl:true}).setView([35.85,129.22],12);
+  map=L.map('map',{zoomControl:true,scrollWheelZoom:false,zoomSnap:0,zoomDelta:0.5}).setView([35.85,129.22],12);
+  setupWheel();
   window.__mapMoveCount=0;
   map.on('moveend',()=>{window.__mapMoveCount++;window.dispatchEvent(new Event('gyeongju-map-idle'));});
   const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -676,6 +703,7 @@ function initMap(){
     m.on('popupopen',()=>window.dispatchEvent(new Event('gyeongju-map-popup-open')));
     m.on('click',()=>{const row=$(`#foodbox .stop[data-fid="${f.id}"]`);if(row){$$('.stop.sel').forEach(e=>{e.classList.remove('sel');});row.classList.add('sel');}});
     foodLayer.push({f,m});
+    if(!foodVisible(f))map.removeLayer(m);
   });
   buildRoutes();
   // tag arrows with day
@@ -684,6 +712,7 @@ function initMap(){
     const n=DATA.itinerary.find(i=>i.day===d).stops.length-1;
     for(let k=0;k<n;k++){arrowLayer[ai++]._day=d;}
   }
+  refreshVisibility();
   fitAll();
   window.dispatchEvent(new Event('gyeongju-map-ready'));
 }
